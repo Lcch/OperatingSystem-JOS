@@ -1,10 +1,10 @@
 *** Now run 'gdb'.
 ***
 Could not open option rom 'sgabios.bin': No such file or directory
-6828 decimal is XXX octal!
+6828 decimal is 15254 octal!
 Physical memory: 66556K available, base = 640K, extended = 65532K
-kernel panic at kern/pmap.c:124: mem_init: This function is not finished
-
+check_page_alloc() succeeded!
+kernel panic at kern/pmap.c:691: assertion failed: page_insert(kern_pgdir, pp1, 0x0, PTE_W) < 0
 Welcome to the JOS kernel monitor!
 Type 'help' for a list of commands.
 
