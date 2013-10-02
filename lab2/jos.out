@@ -4,7 +4,17 @@ Could not open option rom 'sgabios.bin': No such file or directory
 6828 decimal is 15254 octal!
 Physical memory: 66556K available, base = 640K, extended = 65532K
 check_page_alloc() succeeded!
-kernel panic at kern/pmap.c:691: assertion failed: page_insert(kern_pgdir, pp1, 0x0, PTE_W) < 0
+!
+page_lookup
+page_lookup
+page_lookup
+page_lookup
+page_lookup
+page_lookup
+page_lookup
+check_page() succeeded!
+!!
+kernel panic at kern/pmap.c:647: assertion failed: check_va2pa(pgdir, UPAGES + i) == PADDR(pages) + i
 Welcome to the JOS kernel monitor!
 Type 'help' for a list of commands.
 
