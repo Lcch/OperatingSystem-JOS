@@ -159,9 +159,7 @@ mem_init(void)
 
 	check_page_free_list(1);
 	check_page_alloc();
-	cprintf("!\n");
     check_page();
-    cprintf("!!\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -173,6 +171,11 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
+    boot_map_region(kern_pgdir, 
+                    UPAGES, 
+                    ROUNDUP(npages * sizeof(struct PageInfo), PGSIZE), 
+                    PADDR(pages),
+                    PTE_U);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -185,6 +188,11 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
+    boot_map_region(kern_pgdir,
+                    KSTACKTOP-KSTKSIZE,
+                    KSTKSIZE,
+                    PADDR(bootstack),
+                    PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -194,7 +202,13 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-
+    boot_map_region(kern_pgdir,
+                    KERNBASE,
+                    -KERNBASE,
+                    0,
+                    PTE_W);     
+    // in 32-bit system, 2^32 - KERNBASE = - KERNBASE
+    
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
 
@@ -372,7 +386,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	// size is a multiple of PGSIZE
     uintptr_t va_now;
     pte_t * pte;
-    for (va_now = va; va_now < va + size; va_now += PGSIZE, pa += PGSIZE) {
+    for (va_now = va; va_now != va + size; va_now += PGSIZE, pa += PGSIZE) {
         pte = pgdir_walk(pgdir, (void *)va_now, true);
         // 20 PPN, 12 flag
         *pte = pa | PTE_P | perm;
@@ -433,7 +447,7 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
-    cprintf("page_lookup\n");
+    // cprintf("page_lookup\n");
 	// Fill this function in
     pte_t * pte = pgdir_walk(pgdir, va, 0);
     if (pte == NULL || (*pte & PTE_P) == 0) return NULL;   // no page mapped at va
