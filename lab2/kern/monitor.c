@@ -10,6 +10,7 @@
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
+#include <kern/pmap.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -26,7 +27,10 @@ static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "backtrace", "Backtrace", mon_backtrace },
-    { "setcolor", "Change the console color", mon_setcolor }
+    { "setcolor", "Change the console color", mon_setcolor },
+    { "showmappings", "Show virtual addresses mappings", mon_showmappings },
+    { "setpermission", "set permission", mon_setpermission },
+    { "dump", "dump contents in memory", mon_dump }
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -79,7 +83,6 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
     return 0;
 }
 
-
 int
 mon_setcolor(int argc, char **argv, struct Trapframe *tf)
 {
@@ -103,6 +106,146 @@ mon_setcolor(int argc, char **argv, struct Trapframe *tf)
     return 0;
 }
 
+int
+mon_setpermission(int argc, char **argv, struct Trapframe *tf)
+{
+    if (argc != 5) { 
+        cprintf("Command should be: setpermissions [virtual addr] [W (0/1)] [U (0/1)] [P (0/1)]\n");
+        cprintf("Example: setpermissions 0x0 1 0 1\n");
+    } else {
+        uint32_t addr = strtol(argv[1], NULL, 0);
+        uint32_t perm = 0;
+        if (argv[2][0] == '1') perm |= PTE_W;
+        if (argv[3][0] == '1') perm |= PTE_U;
+        if (argv[4][0] == '1') perm |= PTE_P;
+        addr = ROUNDUP(addr, PGSIZE);
+        pte_t *pte = pgdir_walk(kern_pgdir, (void *)addr, 0);
+        if (pte != NULL) {
+            cprintf("0x%08x -> pa: 0x%08x\n old_perm: ", addr, PTE_ADDR(*pte));
+            if (*pte & PTE_W) cprintf("RW"); else cprintf("R-");
+            if (*pte & PTE_U) cprintf("U"); else cprintf("S");
+            if (*pte & PTE_P) cprintf("P"); else cprintf("-");
+            cprintf("  --> new_perm: ");
+            *pte = PTE_ADDR(*pte) | perm;     
+            if (*pte & PTE_W) cprintf("RW"); else cprintf("R-");
+            if (*pte & PTE_U) cprintf("U"); else cprintf("S");
+            if (*pte & PTE_P) cprintf("P"); else cprintf("-");
+            cprintf("\n");
+        } else {
+            cprintf(" no mapped \n");
+        }
+    }
+    return 0;
+}
+
+bool
+pa_con(uint32_t addr, uint32_t * value)
+{
+    // get value in addr(physical address)
+    // if no page mapped in addr, return false;
+    if (addr >= PADDR(pages) && addr < PADDR(pages) + PTSIZE) {
+        // PageInfo
+        *value = *(uint32_t *)(UPAGES + (addr - PADDR(pages)));
+        return true;
+    }
+    if (addr >= PADDR(bootstack) && addr < PADDR(bootstack) + KSTKSIZE) {
+        // kernel stack
+        *value = *(uint32_t *)(KSTACKTOP - KSTKSIZE + (addr - PADDR(bootstack)));
+        return true;
+    }
+    if (addr < -KERNBASE) {
+        // Other
+        *value = *(uint32_t *)(addr + KERNBASE);
+        return true;
+    }
+    // Not in virtual memory mapped.
+    return false;
+}
+
+int
+mon_dump(int argc, char **argv, struct Trapframe *tf)
+{
+    if (argc != 4) {
+        cprintf("Command should be: dump [v/p] [addr1] [addr2]\n");
+        cprintf("Example: dump v 0xf0000000 0xf0000010\n");
+        cprintf("         dump contents in virtual address [0xf0000000, 0xf0000010)\n");
+    } else {
+        uint32_t laddr = strtol(argv[2], NULL, 0);
+        uint32_t haddr = strtol(argv[3], NULL, 0);
+        if (laddr > haddr) {
+            haddr ^= laddr;
+            laddr ^= haddr;
+            haddr ^= laddr;
+        }
+        laddr = ROUNDDOWN(laddr, 4);
+        haddr = ROUNDDOWN(haddr, 4);
+        if (argv[1][0] == 'v') {
+            // virtual address
+            uint32_t now;
+            for (now = laddr; now != haddr; now += 4) {
+                if (now == laddr || ((now & 0xf) == 0)) {
+                    if (now != laddr) cprintf("\n");
+                    cprintf("0x%08x:  ", now);
+                }
+                cprintf("0x%08x  ", *((uint32_t *)now));
+            }
+            cprintf("\n");
+        } else {
+            // physical address
+            uint32_t now, value;
+            for (now = laddr; now != haddr; now += 4) {
+                if (now == laddr || ((now & 0xf) == 0)) {
+                    if (now != laddr) cprintf("\n");
+                    cprintf("0x%08x:  ", now);
+                }
+                if (pa_con(now, &value)) {
+                    cprintf("0x%08x  ", value);
+                } else
+                    cprintf("----------  ");
+            }
+            cprintf("\n");
+        }
+    }
+    return 0;
+}
+
+int
+mon_showmappings(int argc, char **argv, struct Trapframe *tf)
+{
+    if (argc != 3) {
+        cprintf("Command should be: showmappings [addr1] [addr2]\n");
+        cprintf("Example: showmappings 0x3000 0x5000\n");
+    } else {
+        uint32_t laddr = strtol(argv[1], NULL, 0);
+        uint32_t haddr = strtol(argv[2], NULL, 0);
+        if (laddr > haddr) {
+            haddr ^= laddr;
+            laddr ^= haddr;
+            haddr ^= laddr;
+        }
+        laddr = ROUNDDOWN(laddr, PGSIZE);
+        haddr = ROUNDUP(haddr, PGSIZE);
+        cprintf("0x%08x - 0x%08x\n", laddr, haddr);
+        
+        uint32_t now;
+        pte_t *pte;
+        for (now = laddr; now != haddr; now += PGSIZE) {
+            cprintf("[ 0x%08x, 0x%08x ) -> ", now, now + PGSIZE); 
+            pte = pgdir_walk(kern_pgdir, (void *)now, 0);
+            if (pte == 0 || (*pte & PTE_P) == 0) {
+                cprintf(" no mapped \n");
+            } else {
+                cprintf("0x%08x ", PTE_ADDR(*pte));
+                if (*pte & PTE_U) cprintf(" user       ");
+                else cprintf(" supervisor ");
+                if (*pte & PTE_W) cprintf(" RW ");
+                else cprintf(" R ");
+                cprintf("\n");
+            }
+        }
+    }
+    return 0;
+}
 
 /***** Kernel monitor command interpreter *****/
 

@@ -8,7 +8,7 @@ obj/kern/entrypgdir.o: kern/entrypgdir.c inc/mmu.h inc/types.h \
  inc/memlayout.h
 obj/kern/monitor.o: kern/monitor.c inc/stdio.h inc/stdarg.h inc/string.h \
  inc/types.h inc/memlayout.h inc/mmu.h inc/assert.h inc/x86.h \
- kern/console.h kern/monitor.h kern/kdebug.h
+ kern/console.h kern/monitor.h kern/kdebug.h kern/pmap.h
 obj/kern/init.o: kern/init.c inc/stdio.h inc/stdarg.h inc/string.h \
  inc/types.h inc/assert.h kern/monitor.h kern/console.h kern/pmap.h \
  inc/memlayout.h inc/mmu.h kern/kclock.h

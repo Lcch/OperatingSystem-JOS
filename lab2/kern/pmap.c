@@ -193,8 +193,8 @@ mem_init(void)
                     KSTKSIZE,
                     PADDR(bootstack),
                     PTE_W);
-
-	//////////////////////////////////////////////////////////////////////
+	
+    //////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
 	// Ie.  the VA range [KERNBASE, 2^32) should map to
 	//      the PA range [0, 2^32 - KERNBASE)
@@ -295,7 +295,10 @@ struct PageInfo *
 page_alloc(int alloc_flags)
 {
 	// Fill this function in
-	if (page_free_list == NULL) {
+
+    while (page_free_list && page_free_list->pp_ref != 0) 
+        page_free_list = page_free_list->pp_link;
+    if (page_free_list == NULL) {
         return NULL;
     } else {
         struct PageInfo * alloc_page = page_free_list;
@@ -360,7 +363,6 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
     if (pgdir[PDX(va)] == 0 || (pgdir[PDX(va)] & PTE_P) == 0) {
         // page table is not exist
         if (create == false) return NULL;
-
         struct PageInfo * new_page = page_alloc(1);
         if (new_page == NULL) return NULL;      // allocation fails
         ++new_page->pp_ref;
