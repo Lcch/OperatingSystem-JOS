@@ -182,12 +182,17 @@ mon_dump(int argc, char **argv, struct Trapframe *tf)
         if (argv[1][0] == 'v') {
             // virtual address
             uint32_t now;
+            pte_t * pte;
             for (now = laddr; now != haddr; now += 4) {
                 if (now == laddr || ((now & 0xf) == 0)) {
-                    if (now != laddr) cprintf("\n");
+                    if (now != laddr) cprintf("\n"); 
                     cprintf("0x%08x:  ", now);
                 }
-                cprintf("0x%08x  ", *((uint32_t *)now));
+                pte = pgdir_walk(kern_pgdir, (void *)ROUNDDOWN(now, PGSIZE), 0);
+                if (pte && (*pte & PTE_P)) 
+                    cprintf("0x%08x  ", *((uint32_t *)now));
+                else
+                    cprintf("--------  ");
             }
             cprintf("\n");
         } else {
