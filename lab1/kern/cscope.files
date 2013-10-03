@@ -1,0 +1,9 @@
+./monitor.c
+./monitor.h
+./console.c
+./entrypgdir.c
+./init.c
+./console.h
+./kdebug.h
+./kdebug.c
+./printf.c
