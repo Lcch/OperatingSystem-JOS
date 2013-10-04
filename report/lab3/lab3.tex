@@ -1,0 +1,114 @@
+\documentclass[GBK,winfonts,a4paper,10pt]{ctexart}
+\usepackage{fancyhdr}
+\usepackage{indentfirst}
+\usepackage{graphics}
+\usepackage{enumerate}
+\usepackage{framed}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{mdwlist}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset{numbers=left, numberstyle=\small, keywordstyle=\color{blue!70}, commentstyle=\color{red!50!green!50!blue!50}, frame=shadowbox, rulesepcolor=\color{red!20!green!20!blue!20},escapeinside=``, xleftmargin=2em,xrightmargin=2em, aboveskip=1em}
+\usepackage{geometry}
+
+\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}%
+       
+\lstdefinestyle{customc}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  frame=single,
+  xleftmargin=\parindent,
+  language=C,
+  showstringspaces=false,
+  basicstyle=\fontsize{8pt}{8pt}\ttfamily,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  identifierstyle=\color{blue},
+  stringstyle=\color{orange},
+  tabsize=4,
+  numbers=none,
+}
+
+\lstset{escapechar=@,style=customc}
+
+\pagestyle{fancy}
+\hypersetup{pdfborder=0 0 0}
+
+\usepackage{clrscode}
+
+\usepackage{latexsym}
+
+\begin{document}
+
+\rhead{}
+\lhead{}
+\cfoot{\thepage}
+\renewcommand{\footrulewidth}{0.4pt}
+%\renewcommand{\thesection}{}
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+\setlength{\tabcolsep}{2pt}
+
+\setlength{\parindent}{2em}
+
+\thispagestyle{fancy}
+
+
+\title{Operating System MIT 6.828 JOS Lab3 Report}
+\author{Computer Science \\ ChenHao(1100012776) }
+\date{\today}
+\maketitle
+
+\thispagestyle{fancy}
+
+\tableofcontents
+
+\newpage
+
+\begin{section}{ Part A: User Environments and Exception Handling }
+
+\begin{subsection}{ Exercise 1 }
+\par
+分配物理内存和创建虚拟内存映射给envc，类似Lab2即可。
+\begin{lstlisting}[language=C]
+	envs = (struct Env *) boot_alloc(NENV * sizeof(struct Env));
+
+// ... ...
+
+    boot_map_region(kern_pgdir,
+                    UENVS,
+                    ROUNDUP(NENV * sizeof(struct PageInfo), PGSIZE),
+                    PADDR(envs),
+                    PTE_W);
+\end{lstlisting}
+\end{subsection}
+
+
+\end{section}
+
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
