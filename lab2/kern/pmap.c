@@ -147,7 +147,7 @@ mem_init(void)
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
     pages = (struct PageInfo *) boot_alloc(npages * sizeof(struct PageInfo));
-    
+    cprintf("%u \n", sizeof(struct PageInfo)); 
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set

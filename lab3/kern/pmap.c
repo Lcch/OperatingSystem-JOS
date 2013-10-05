@@ -192,9 +192,9 @@ mem_init(void)
 	// LAB 3: Your code here.
     boot_map_region(kern_pgdir,
                     UENVS,
-                    ROUNDUP(NENV * sizeof(struct PageInfo), PGSIZE),
+                    ROUNDUP(NENV * sizeof(struct Env), PGSIZE),
                     PADDR(envs),
-                    PTE_W);
+                    PTE_U);     
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -228,7 +228,7 @@ mem_init(void)
                     PTE_W);     
     // in 32-bit system, 2^32 - KERNBASE = - KERNBASE
    
-    cprintf("!!!\n");
+    // cprintf("check_kern_pgdir in\n");
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
 

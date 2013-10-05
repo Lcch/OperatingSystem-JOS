@@ -71,6 +71,8 @@
 \newpage
 
 \begin{section}{ Part A: User Environments and Exception Handling }
+\par
+lsof -i:xxxx    (xxxx是被占用的端口,得到占用端口的进程的PID)
 
 \begin{subsection}{ Exercise 1 }
 \par
@@ -82,10 +84,187 @@
 
     boot_map_region(kern_pgdir,
                     UENVS,
-                    ROUNDUP(NENV * sizeof(struct PageInfo), PGSIZE),
+                    ROUNDUP(NENV * sizeof(struct Env), PGSIZE),
                     PADDR(envs),
-                    PTE_W);
+                    PTE_U);
 \end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{ Exercise 2 }
+\par
+pmap只对内核进行了内存管理，而对于每个进程，都用有一个独立的内存空间，并且每个进程看起来都拥有整个内存空间，因此我们需要对进程也进行虚拟内存的管理，以及管理如何创建进程和进程的切换的问题。
+
+\begin{subsubsection}{env\_init}
+\par
+env\_init类似page\_init，用来初始化NENV个进程管理结构，并且用单向链表来组织空闲的Env。其中要求env\_free\_list初始指向\&envs[0]。似乎这个的原因是在init.c中其会执行envs[0]。
+\begin{lstlisting}[language=C]
+void
+env_init(void)
+{
+	// Set up envs array
+	// LAB 3: Your code here.
+    uint32_t i;
+    env_free_list = envs;
+    for (i = 0; i < NENV; i++) {
+        envs[i].env_id = 0;
+        envs[i].env_status = ENV_FREE;
+        if (i + 1 != NENV)
+            envs[i].env_link = envs + (i + 1);
+        else 
+            envs[i].env_link = NULL;
+    }
+
+	// Per-CPU part of the initialization
+	env_init_percpu();
+}
+\end{lstlisting}
+\end{subsubsection}
+
+\begin{subsubsection}{env\_setup\_vm}
+\par
+env\_setup\_vm分配进程独立的Page Directory，即创建该进程的页目录。对于高于UTOP的虚拟地址PDE应与Kernel的页目录，对于低于UTOP的位置需要清0，这部分就是真正用户进程使用的页目录条目。
+\par
+为什么进程的页目录高于UTOP的虚拟地址的映射和Kernel的页目录一致？
+\par
+我觉得原因在于在内核管理进程的时候，在需用对进程使用的内存进行访问或者使用的时候就需要改用进程的Page Directory，但是同时还需要使用内核的代码或数据，因此保持一直可以保证这一点，不会造成错误和不必要的麻烦。而由于高于UTOP的虚拟地址的权限都是kernel权限的，因此在用户态的情况可以防止用户进行访问和修改，而且对于UTOP以上的内存对于用户进程是不允许访问的，这部分对于用户进程来说是不会使用的。
+\begin{lstlisting}[language=C]
+static int
+env_setup_vm(struct Env *e)
+{
+	int i;
+	struct PageInfo *p = NULL;
+
+	// Allocate a page for the page directory
+	if (!(p = page_alloc(ALLOC_ZERO)))
+		return -E_NO_MEM;
+
+    p->pp_ref++;
+    e->env_pgdir = (pde_t *)page2kva(p);
+    memcpy(e->env_pgdir, kern_pgdir, PGSIZE);
+    memset(e->env_pgdir, 0, PDX(UTOP) * sizeof(pde_t));
+
+	// UVPT maps the env's own page table read-only.
+	// Permissions: kernel R, user R
+	e->env_pgdir[PDX(UVPT)] = PADDR(e->env_pgdir) | PTE_P | PTE_U;
+
+	return 0;
+}
+\end{lstlisting}
+\end{subsubsection}
+
+\begin{subsubsection}{region\_alloc}
+\par
+region\_alloc用于为进程分配物理内存，因此应该使用对应进程的页目录和页表。
+\begin{lstlisting}[language=C]
+static void
+region_alloc(struct Env *e, void *va, size_t len)
+{
+    uint32_t addr = (uint32_t)ROUNDDOWN(va, PGSIZE);
+    uint32_t end  = (uint32_t)ROUNDUP(va + len, PGSIZE);
+    struct PageInfo *pg;
+    // cprintf("region_alloc: %u %u\n", addr, end);
+    for ( ; addr != end; addr += PGSIZE) {
+        pg = page_alloc(1);
+        if (pg == NULL) {
+            panic("region_alloc : can't alloc page\n");
+        } else {
+            if (page_insert(e->env_pgdir, pg, (void *)addr, PTE_U | PTE_W) != 0) {
+                panic("region_alloc : page_insert fail\n");
+            }
+        }
+    }
+    return;
+}
+\end{lstlisting}
+\end{subsubsection}
+
+
+\begin{subsubsection}{load\_icode}
+\par
+load\_icode将目标文件放入内存中，存放的虚拟内存的位置由目标文件指定。这个函数有两个需要注意的地方，第一个是首先使用region\_alloc分配对应虚拟地址的内存，而这个映射仅在该进程的页表中存在，在内核中是不存在的，因此在memcpy和memset的时候需要使用的该进程的页目录，而不应该使用内核的页目录。这个地方非常阴险，我一开始就掉进了这个陷阱中。
+\par
+第二个需要注意的地方就是需要将elf->e\_entry即目标文件的入口放入进程环境的eip中。
+\begin{lstlisting}[language=C]
+static void
+load_icode(struct Env *e, uint8_t *binary, size_t size)
+{
+    struct Elf * elf = (struct Elf *)binary;
+    if (elf->e_magic != ELF_MAGIC) {
+        panic("error elf magic number\n");
+    }
+    struct Proghdr *ph, *eph;
+    ph = (struct Proghdr *) ((uint8_t *) elf + elf->e_phoff);
+    eph = ph + elf->e_phnum;
+
+    lcr3(PADDR(e->env_pgdir));
+    for (; ph < eph; ph++) {
+        if (ph->p_type == ELF_PROG_LOAD) {
+            region_alloc(e, (void *)ph->p_va, ph->p_memsz);
+            memcpy((void *)ph->p_va, binary + ph->p_offset, ph->p_filesz);
+            memset((void *)(ph->p_va) + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
+        }
+    }
+    e->env_tf.tf_eip = elf->e_entry;
+
+    lcr3(PADDR(kern_pgdir));
+    region_alloc(e, (void *)(USTACKTOP - PGSIZE), PGSIZE);
+
+    return;
+}
+\end{lstlisting}
+\end{subsubsection}
+
+
+\begin{subsubsection}{env\_create}
+\par
+这个函数需要做就是将代码导入内存中，需要分两布：第一创建进程的地址空间的页目录以及设置环境变量，第二是将目标文件的代码导入内存中。
+\begin{lstlisting}[language=C]
+void
+env_create(uint8_t *binary, size_t size, enum EnvType type)
+{
+    struct Env * e;
+    int r = env_alloc(&e, 0);
+    if (r < 0) {
+        panic("env_create: %e\n", r);
+    }
+    load_icode(e, binary, size);
+    e->env_type = type;
+    return;
+}
+\end{lstlisting}
+\end{subsubsection}
+
+\begin{subsubsection}{env\_run}
+\par
+只需要进行切换一下即可。遗留问题如果curenv的状态为别的状态怎么办？之后回来再来看好了。
+\begin{lstlisting}[language=C]
+void
+env_run(struct Env *e)
+{
+    if (curenv != NULL) {
+        // context switch
+        if (curenv->env_status == ENV_RUNNING) {
+            curenv->env_status = ENV_RUNNABLE;
+        }
+        // how about other env_status ? e.g. like ENV_DYING ?
+    }
+    curenv = e;
+    curenv->env_status = ENV_RUNNING;
+    curenv->env_runs++;
+    
+    lcr3(PADDR(curenv->env_pgdir));
+
+    env_pop_tf(&curenv->env_tf);    
+	panic("env_run not yet implemented");
+}
+\end{lstlisting}
+\end{subsubsection}
+
+\par
+gdb得到结果顺利到达int \$0x30处。
+\end{subsection}
+
+\begin{subsection}{ Exercise 3 }
 \end{subsection}
 
 
