@@ -267,6 +267,164 @@ gdb得到结果顺利到达int \$0x30处。
 \begin{subsection}{ Exercise 3 }
 \end{subsection}
 
+\begin{subsection}{ Exercise 4 }
+\par
+由IA-32手册知是否需要Error Code的情况：
+\begin{center}
+    \begin{tabular}{ | l | l | l |}
+    \hline
+Interrupt   &   ID   &   Error Code  \\ \hline
+divide error	&	0	&	N	\\ \hline 				
+debug exception &  1  & N	\\ \hline 
+non-maskable interrupt	&	2	&	N	\\ \hline 
+breakpoint	&	3	&	N	\\ \hline 
+overflow		&	4	&	N	\\ \hline 
+bounds check		&	5	&	N	\\ \hline 
+illegal opcode	&	6	&	N	\\ \hline 
+device not available		&	7	&	N	\\ \hline 
+double fault				&	8	&	N	\\ \hline 
+invalid task switch segment	&	10	&	Y	\\ \hline 
+segment not present	&	11	&	Y	\\ \hline 
+stack exception	&	12	&	Y	\\ \hline 
+general protection fault	&	13	&	Y	\\ \hline 
+page fault	&	14	&	Y	\\ \hline 
+floating point error	&	16	&	N	\\ \hline 
+aligment check	&	17	&	Y		\\ \hline 
+machine check		&	18	&	N	\\ \hline 
+SIMD floating point error		&	19	&	N	\\ \hline
+    \end{tabular}
+\end{center}
+
+\begin{subsubsection}{ trapentry.S }
+\par
+trapentry.S就是设置各种终端的入口，以及进入中断后队进程状态的保护。于是在trapentry.S的.text段中设置对应入口的汇编即可，对于状态的保护即在栈中建Trapframe,根据inc/trap.h中的Trapframe结构，存放相应的寄存器，并将GD\_KD导入\%ds和\%es中，保存\%esp执行trap()函数。
+\begin{lstlisting}[language=C]
+.text
+ /*
+ * Lab 3: Your code here for generating entry points for the different traps.
+ */
+ 	TRAPHANDLER_NOEC(vec0, T_DIVIDE)
+ 	TRAPHANDLER_NOEC(vec1, T_DEBUG)
+ 	TRAPHANDLER_NOEC(vec2, T_NMI)
+ 	TRAPHANDLER_NOEC(vec3, T_BRKPT)
+ 	TRAPHANDLER_NOEC(vec4, T_OFLOW)
+
+ 	TRAPHANDLER_NOEC(vec6, T_BOUND)
+	TRAPHANDLER_NOEC(vec7, T_DEVICE)
+ 	TRAPHANDLER_NOEC(vec8, T_DBLFLT)
+
+ 	TRAPHANDLER(vec10, T_TSS)
+ 	TRAPHANDLER(vec11, T_SEGNP)
+ 	TRAPHANDLER(vec12, T_STACK)
+ 	TRAPHANDLER(vec13, T_GPFLT)
+ 	TRAPHANDLER(vec14, T_PGFLT) 
+
+ 	TRAPHANDLER_NOEC(vec16, T_FPERR)
+ 	TRAPHANDLER(vec17, T_ALIGN)
+ 	TRAPHANDLER_NOEC(vec18, T_MCHK)
+ 	TRAPHANDLER_NOEC(vec19, T_SIMDERR)
+
+/*
+ * Lab 3: Your code here for _alltraps
+ */
+_alltraps:
+	pushl %ds
+	pushl %es
+	pushal
+
+	movl $GD_KD, %eax
+	movw %ax, %ds
+	movw %ax, %es
+
+	pushl %esp
+	call trap
+\end{lstlisting}
+\end{subsubsection}
+
+\begin{subsubsection}{ trap\_init }
+\par
+trap\_init为初始化IDT表，并将表头导入IDTR中。IDT表中的项如下图所示：
+\includegraphics[scale=0.5]{IDTGateDescriptors.png}
+因此将对应项传入SETGATE即可。
+\begin{lstlisting}[language=C]
+// In inc/mmu.h
+// Set up a normal interrupt/trap gate descriptor.
+// - istrap: 1 for a trap (= exception) gate, 0 for an interrupt gate.
+    //   see section 9.6.1.3 of the i386 reference: "The difference between
+    //   an interrupt gate and a trap gate is in the effect on IF (the
+    //   interrupt-enable flag). An interrupt that vectors through an
+    //   interrupt gate resets IF, thereby preventing other interrupts from
+    //   interfering with the current interrupt handler. A subsequent IRET
+    //   instruction restores IF to the value in the EFLAGS image on the
+    //   stack. An interrupt through a trap gate does not change IF."
+// - sel: Code segment selector for interrupt/trap handler
+// - off: Offset in code segment for interrupt/trap handler
+// - dpl: Descriptor Privilege Level -
+//	  the privilege level required for software to invoke
+//	  this interrupt/trap gate explicitly using an int instruction.
+#define SETGATE(gate, istrap, sel, off, dpl) ...
+// ----------------------------------------------------------------------------
+
+void
+trap_init(void)
+{
+	extern struct Segdesc gdt[];
+
+	// LAB 3: Your code here.
+	void vec0();
+	void vec1();
+	void vec2();
+	void vec3();
+	void vec4();
+	void vec6();
+	void vec7();
+	void vec8();
+	void vec10();
+	void vec11();
+	void vec12();
+	void vec13();
+	void vec14();
+	void vec16();	
+	void vec17();
+	void vec18();
+	void vec19();
+
+	SETGATE(idt[0], 0, GD_KT, vec0, 0);
+	SETGATE(idt[1], 0, GD_KT, vec1, 0);
+	SETGATE(idt[2], 0, GD_KT, vec2, 0);
+	SETGATE(idt[3], 0, GD_KT, vec3, 0);
+	SETGATE(idt[4], 0, GD_KT, vec4, 0);
+
+	SETGATE(idt[6], 0, GD_KT, vec6, 0);
+	SETGATE(idt[7], 0, GD_KT, vec7, 0);
+	SETGATE(idt[8], 0, GD_KT, vec8, 0);
+	SETGATE(idt[10], 0, GD_KT, vec10, 0);
+	SETGATE(idt[11], 0, GD_KT, vec11, 0);
+	SETGATE(idt[12], 0, GD_KT, vec12, 0);
+	SETGATE(idt[13], 0, GD_KT, vec13, 0);
+	SETGATE(idt[14], 0, GD_KT, vec14, 0);
+
+	SETGATE(idt[16], 0, GD_KT, vec16, 0);
+	SETGATE(idt[17], 0, GD_KT, vec17, 0);
+	SETGATE(idt[18], 0, GD_KT, vec18, 0);
+	SETGATE(idt[19], 0, GD_KT, vec19, 0);
+
+	// Per-CPU setup 
+	trap_init_percpu();
+}
+\end{lstlisting}
+执行，成功了！
+\end{subsubsection}
+
+\end{subsection}
+
+\begin{subsection}{ Chanllenge }
+\par
+好吧，看来Exercise4写挫了。。。得重写了
+\end{subsection}
+
+
+
 
 \end{section}
 

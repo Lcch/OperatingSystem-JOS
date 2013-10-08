@@ -65,6 +65,43 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	void vec0();
+	void vec1();
+	void vec2();
+	void vec3();
+	void vec4();
+	void vec6();
+	void vec7();
+	void vec8();
+	void vec10();
+	void vec11();
+	void vec12();
+	void vec13();
+	void vec14();
+	void vec16();	
+	void vec17();
+	void vec18();
+	void vec19();
+
+	SETGATE(idt[0], 0, GD_KT, vec0, 0);
+	SETGATE(idt[1], 0, GD_KT, vec1, 0);
+	SETGATE(idt[2], 0, GD_KT, vec2, 0);
+	SETGATE(idt[3], 0, GD_KT, vec3, 0);
+	SETGATE(idt[4], 0, GD_KT, vec4, 0);
+
+	SETGATE(idt[6], 0, GD_KT, vec6, 0);
+	SETGATE(idt[7], 0, GD_KT, vec7, 0);
+	SETGATE(idt[8], 0, GD_KT, vec8, 0);
+	SETGATE(idt[10], 0, GD_KT, vec10, 0);
+	SETGATE(idt[11], 0, GD_KT, vec11, 0);
+	SETGATE(idt[12], 0, GD_KT, vec12, 0);
+	SETGATE(idt[13], 0, GD_KT, vec13, 0);
+	SETGATE(idt[14], 0, GD_KT, vec14, 0);
+
+	SETGATE(idt[16], 0, GD_KT, vec16, 0);
+	SETGATE(idt[17], 0, GD_KT, vec17, 0);
+	SETGATE(idt[18], 0, GD_KT, vec18, 0);
+	SETGATE(idt[19], 0, GD_KT, vec19, 0);
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -144,6 +181,7 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
 
+
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT)
@@ -160,7 +198,7 @@ trap(struct Trapframe *tf)
 	// The environment may have set DF and some versions
 	// of GCC rely on DF being clear
 	asm volatile("cld" ::: "cc");
-
+	
 	// Check that interrupts are disabled.  If this assertion
 	// fails, DO NOT be tempted to fix it by inserting a "cli" in
 	// the interrupt path.

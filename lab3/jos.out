@@ -5,10 +5,35 @@ Could not open option rom 'sgabios.bin': No such file or directory
 Physical memory: 66556K available, base = 640K, extended = 65532K
 check_page_alloc() succeeded!
 check_page() succeeded!
-!!!
 check_kern_pgdir() succeeded!
 check_page_installed_pgdir() succeeded!
-kernel panic at kern/env.c:460: env_run not yet implemented
+mem_init done! 
+env_init done! 
+trap_init done! 
+env_setup_vm in
+env_setup_vm out
+[00000000] new env 00001000
+Incoming TRAP frame at 0xefffffbc
+TRAP frame at 0xf01fa000
+  edi  0x00000000
+  esi  0x00000000
+  ebp  0xeebfdfb0
+  oesp 0xefffffdc
+  ebx  0x00000000
+  edx  0xf010000c
+  ecx  0x00000064
+  eax  0x00000000
+  es   0x----0023
+  ds   0x----0023
+  trap 0x0000000d General Protection
+  err  0x00000182
+  eip  0x008000af
+  cs   0x----001b
+  flag 0x00000086
+  esp  0xeebfdfa4
+  ss   0x----0023
+[00001000] free env 00001000
+Destroyed the only environment - nothing more to do!
 Welcome to the JOS kernel monitor!
 Type 'help' for a list of commands.
 

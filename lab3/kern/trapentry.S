@@ -42,14 +42,42 @@
 	jmp _alltraps
 
 .text
-
-/*
+ /*
  * Lab 3: Your code here for generating entry points for the different traps.
  */
+ 	TRAPHANDLER_NOEC(vec0, T_DIVIDE)
+ 	TRAPHANDLER_NOEC(vec1, T_DEBUG)
+ 	TRAPHANDLER_NOEC(vec2, T_NMI)
+ 	TRAPHANDLER_NOEC(vec3, T_BRKPT)
+ 	TRAPHANDLER_NOEC(vec4, T_OFLOW)
 
+ 	TRAPHANDLER_NOEC(vec6, T_BOUND)
+	TRAPHANDLER_NOEC(vec7, T_DEVICE)
+ 	TRAPHANDLER_NOEC(vec8, T_DBLFLT)
 
+ 	TRAPHANDLER(vec10, T_TSS)
+ 	TRAPHANDLER(vec11, T_SEGNP)
+ 	TRAPHANDLER(vec12, T_STACK)
+ 	TRAPHANDLER(vec13, T_GPFLT)
+ 	TRAPHANDLER(vec14, T_PGFLT) 
+
+ 	TRAPHANDLER_NOEC(vec16, T_FPERR)
+ 	TRAPHANDLER(vec17, T_ALIGN)
+ 	TRAPHANDLER_NOEC(vec18, T_MCHK)
+ 	TRAPHANDLER_NOEC(vec19, T_SIMDERR)
 
 /*
  * Lab 3: Your code here for _alltraps
  */
+_alltraps:
+	pushl %ds
+	pushl %es
+	pushal
+
+	movl $GD_KD, %eax
+	movw %ax, %ds
+	movw %ax, %es
+
+	pushl %esp
+	call trap
 
