@@ -1,5 +1,7 @@
 /* See COPYRIGHT for copyright information. */
 
+/* Challenge : Using 4M page mapping */
+
 #include <inc/x86.h>
 #include <inc/mmu.h>
 #include <inc/error.h>
@@ -156,21 +158,11 @@ mem_init(void)
 	// or page_insert
 	page_init();
 
-
-    // cprintf("GGG %08x\n", (uint32_t)page2pa(page_free_list));
-
 	check_page_free_list(1);
-
-    // cprintf("%08x\n", (uint32_t)page2pa(page_free_list));
 
 	check_page_alloc();
 
-    // cprintf("%08x\n", (uint32_t)page2pa(page_free_list));
-
 	check_page();
-
-    // cprintf("%08x\n", (uint32_t)page2pa(page_free_list));
-
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -218,7 +210,7 @@ mem_init(void)
                     KERNBASE,
                     -KERNBASE,
                     0,
-                    PTE_W);     
+                    PTE_W | PTE_PS);     
     // in 32-bit system, 2^32 - KERNBASE = - KERNBASE
     
 	// Check that the initial page directory has been set up correctly.
@@ -400,11 +392,20 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	// size is a multiple of PGSIZE
     uintptr_t va_now;
     pte_t * pte;
-    for (va_now = va; va_now != va + size; va_now += PGSIZE, pa += PGSIZE) {
-        pte = pgdir_walk(pgdir, (void *)va_now, true);
-        // 20 PPN, 12 flag
-        *pte = pa | PTE_P | perm;
-    }
+    if (perm & PTE_PS) {
+    	// 4M mapping
+    	for (va_now = ROUNDDOWN(va, PGSIZE_PS); va_now != ROUNDUP(va + size, PGSIZE_PS); va_now += PGSIZE_PS, pa += PGSIZE_PS) {
+    		pte = &pgdir[PDX(va_now)];
+    		*pte = pa | PTE_P | PTE_PS | perm;
+    	} 
+    } else {
+    	// 4K mapping
+    	for (va_now = va; va_now != va + size; va_now += PGSIZE, pa += PGSIZE) {
+        	pte = pgdir_walk(pgdir, (void *)va_now, true);
+        	// 20 PPN, 12 flag
+        	*pte = pa | PTE_P | perm;
+    	}
+	}
 }
 
 //
@@ -717,6 +718,12 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 	pgdir = &pgdir[PDX(va)];
 	if (!(*pgdir & PTE_P))
 		return ~0;
+	if (*pgdir & PTE_PS) {
+		// 4M page
+		// uintptr_t tmp = ((*pgdir) & (0xffc00000)) | (va & (~0xffc00000));
+		// cprintf("%u\n", tmp);
+		return PTE_ADDR(((*pgdir) & (0xffc00000)) | (va & (~0xffc00000)));
+	}
 	p = (pte_t*) KADDR(PTE_ADDR(*pgdir));
 	if (!(p[PTX(va)] & PTE_P))
 		return ~0;

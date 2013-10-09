@@ -417,9 +417,68 @@ PTE\_PS即使用大页直接映射4MB的空间，不需要二级页表，仅仅�
 \par:
 \includegraphics[scale=0.5]{4Mpage.png}
 \par
-实现的话应该类似二级页表，也是需要PageInfo，以及预先构建映射表，处理好映射再开启直接使用即可。但是感觉实际需要我写可能会有点困难。。。
+如何更改使得可以使用4M页的映射呢？实际上就是Page Directory的PDE中设置PS位置为1，而且非常方便了不需要分配Page Table，直接设置PPN就可以了。这么方便的事情我觉得还是需要写写看的。依次观察什么地方需要更改：
 \par
-另外我觉得4MB的内存空间不太使用
+page\_init, page\_alloc, page\_free, page\_decref, page\_insert, page\_remove, page\_walk都没有关系。似乎boot\_map\_region还有点可能更改，也省得再写一个插入了，直接更改boot\_map\_region好了。
+\par
+具体更改方式也很简单，根据条件判断一下，具体实现根据上面的图即可。
+\begin{lstlisting}[language=C]
+static void
+boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
+{
+    // cprintf("boot_map_region\n");
+	// size is a multiple of PGSIZE
+    uintptr_t va_now;
+    pte_t * pte;
+    if (perm & PTE_PS) {
+    	// 4M mapping
+    	for (va_now = ROUNDDOWN(va, PGSIZE_PS); va_now != ROUNDUP(va + size, PGSIZE_PS); va_now += PGSIZE_PS, pa += PGSIZE_PS) {
+    		pte = &pgdir[PDX(va_now)];
+    		*pte = pa | PTE_P | PTE_PS | perm;
+    	} 
+    } else {
+    	// 4K mapping
+    	for (va_now = va; va_now != va + size; va_now += PGSIZE, pa += PGSIZE) {
+        	pte = pgdir_walk(pgdir, (void *)va_now, true);
+        	// 20 PPN, 12 flag
+        	*pte = pa | PTE_P | perm;
+    	}
+	}
+}
+\end{lstlisting}
+\par
+测试的话，我只将kernel的高于KERNBASE的地址都用4M大页映射，但是这样通不过check的KERNBASE + i == i的测试，于是我把check也改了。。。好邪恶的感觉。
+\begin{lstlisting}[language=C]
+// in mem_init
+    boot_map_region(kern_pgdir,
+                    KERNBASE,
+                    -KERNBASE,
+                    0,
+                    PTE_W | PTE_PS); 
+                    
+                    
+static physaddr_t
+check_va2pa(pde_t *pgdir, uintptr_t va)
+{
+	pte_t *p;
+
+	pgdir = &pgdir[PDX(va)];
+	if (!(*pgdir & PTE_P))
+		return ~0;
+	if (*pgdir & PTE_PS) {
+		// 4M page
+		// uintptr_t tmp = ((*pgdir) & (0xffc00000)) | (va & (~0xffc00000));
+		// cprintf("%u\n", tmp);
+		return PTE_ADDR(((*pgdir) & (0xffc00000)) | (va & (~0xffc00000)));
+	}
+	p = (pte_t*) KADDR(PTE_ADDR(*pgdir));
+	if (!(p[PTX(va)] & PTE_P))
+		return ~0;
+	return PTE_ADDR(p[PTX(va)]);
+}
+\end{lstlisting}
+\par
+但是，竟然运行Triple fault，调了很久似乎没有发现错误，于是我上网发现4M-page在64位环境是不支持的，我的系统是64位的Ubuntu，是不是这个原因呢？我决定明天找同学的电脑来测试一下。
 \end{subsection}
 
 \begin{subsection}{Challenge 2:}
