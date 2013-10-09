@@ -121,138 +121,139 @@ i386_init(void)
 f0100094:	55                   	push   %ebp
 f0100095:	89 e5                	mov    %esp,%ebp
 f0100097:	83 ec 0c             	sub    $0xc,%esp
-	extern char edata[], end[];
+	extern char * edata, * end;
 
 	// Before doing anything else, complete the ELF loading process.
 	// Clear the uninitialized global data (BSS) section of our program.
 	// This ensures that all static/global variables start out zero.
 	memset(edata, 0, end - edata);
-f010009a:	b8 44 89 11 f0       	mov    $0xf0118944,%eax
-f010009f:	2d 00 83 11 f0       	sub    $0xf0118300,%eax
-f01000a4:	50                   	push   %eax
-f01000a5:	6a 00                	push   $0x0
-f01000a7:	68 00 83 11 f0       	push   $0xf0118300
-f01000ac:	e8 90 14 00 00       	call   f0101541 <memset>
+f010009a:	a1 00 83 11 f0       	mov    0xf0118300,%eax
+f010009f:	8b 15 44 89 11 f0    	mov    0xf0118944,%edx
+f01000a5:	29 c2                	sub    %eax,%edx
+f01000a7:	52                   	push   %edx
+f01000a8:	6a 00                	push   $0x0
+f01000aa:	50                   	push   %eax
+f01000ab:	e8 91 14 00 00       	call   f0101541 <memset>
 
 	// Initialize the console.
 	// Can't call cprintf until after we do this!
 	cons_init();
-f01000b1:	e8 6d 04 00 00       	call   f0100523 <cons_init>
+f01000b0:	e8 6e 04 00 00       	call   f0100523 <cons_init>
 //    cprintf("H%x Wo%s\n", 57616, &i);
 
 //    cprintf("x=%d y=%d", 3, 4);
 //    cprintf("x=%d y=%d", 3);
 
 	cprintf("6828 decimal is %o octal!\n", 6828);
-f01000b6:	83 c4 08             	add    $0x8,%esp
-f01000b9:	68 ac 1a 00 00       	push   $0x1aac
-f01000be:	68 d7 19 10 f0       	push   $0xf01019d7
-f01000c3:	e8 49 09 00 00       	call   f0100a11 <cprintf>
+f01000b5:	83 c4 08             	add    $0x8,%esp
+f01000b8:	68 ac 1a 00 00       	push   $0x1aac
+f01000bd:	68 d7 19 10 f0       	push   $0xf01019d7
+f01000c2:	e8 4a 09 00 00       	call   f0100a11 <cprintf>
 
 	// Test the stack backtrace function (lab 1 only)
 	test_backtrace(5);
-f01000c8:	c7 04 24 05 00 00 00 	movl   $0x5,(%esp)
-f01000cf:	e8 6c ff ff ff       	call   f0100040 <test_backtrace>
-f01000d4:	83 c4 10             	add    $0x10,%esp
+f01000c7:	c7 04 24 05 00 00 00 	movl   $0x5,(%esp)
+f01000ce:	e8 6d ff ff ff       	call   f0100040 <test_backtrace>
+f01000d3:	83 c4 10             	add    $0x10,%esp
 
 	// Drop into the kernel monitor.
 	while (1)
 		monitor(NULL);
-f01000d7:	83 ec 0c             	sub    $0xc,%esp
-f01000da:	6a 00                	push   $0x0
-f01000dc:	e8 cb 07 00 00       	call   f01008ac <monitor>
-f01000e1:	83 c4 10             	add    $0x10,%esp
-f01000e4:	eb f1                	jmp    f01000d7 <i386_init+0x43>
+f01000d6:	83 ec 0c             	sub    $0xc,%esp
+f01000d9:	6a 00                	push   $0x0
+f01000db:	e8 cc 07 00 00       	call   f01008ac <monitor>
+f01000e0:	83 c4 10             	add    $0x10,%esp
+f01000e3:	eb f1                	jmp    f01000d6 <i386_init+0x42>
 
-f01000e6 <_panic>:
+f01000e5 <_panic>:
  * Panic is called on unresolvable fatal errors.
  * It prints "panic: mesg", and then enters the kernel monitor.
  */
 void
 _panic(const char *file, int line, const char *fmt,...)
 {
-f01000e6:	55                   	push   %ebp
-f01000e7:	89 e5                	mov    %esp,%ebp
-f01000e9:	56                   	push   %esi
-f01000ea:	53                   	push   %ebx
-f01000eb:	8b 75 10             	mov    0x10(%ebp),%esi
+f01000e5:	55                   	push   %ebp
+f01000e6:	89 e5                	mov    %esp,%ebp
+f01000e8:	56                   	push   %esi
+f01000e9:	53                   	push   %ebx
+f01000ea:	8b 75 10             	mov    0x10(%ebp),%esi
 	va_list ap;
 
 	if (panicstr)
-f01000ee:	83 3d 40 89 11 f0 00 	cmpl   $0x0,0xf0118940
-f01000f5:	75 37                	jne    f010012e <_panic+0x48>
+f01000ed:	83 3d 40 89 11 f0 00 	cmpl   $0x0,0xf0118940
+f01000f4:	75 37                	jne    f010012d <_panic+0x48>
 		goto dead;
 	panicstr = fmt;
-f01000f7:	89 35 40 89 11 f0    	mov    %esi,0xf0118940
+f01000f6:	89 35 40 89 11 f0    	mov    %esi,0xf0118940
 
 	// Be extra sure that the machine is in as reasonable state
 	__asm __volatile("cli; cld");
-f01000fd:	fa                   	cli    
-f01000fe:	fc                   	cld    
+f01000fc:	fa                   	cli    
+f01000fd:	fc                   	cld    
 
 	va_start(ap, fmt);
-f01000ff:	8d 5d 14             	lea    0x14(%ebp),%ebx
+f01000fe:	8d 5d 14             	lea    0x14(%ebp),%ebx
 	cprintf("kernel panic at %s:%d: ", file, line);
-f0100102:	83 ec 04             	sub    $0x4,%esp
-f0100105:	ff 75 0c             	pushl  0xc(%ebp)
-f0100108:	ff 75 08             	pushl  0x8(%ebp)
-f010010b:	68 f2 19 10 f0       	push   $0xf01019f2
-f0100110:	e8 fc 08 00 00       	call   f0100a11 <cprintf>
+f0100101:	83 ec 04             	sub    $0x4,%esp
+f0100104:	ff 75 0c             	pushl  0xc(%ebp)
+f0100107:	ff 75 08             	pushl  0x8(%ebp)
+f010010a:	68 f2 19 10 f0       	push   $0xf01019f2
+f010010f:	e8 fd 08 00 00       	call   f0100a11 <cprintf>
 	vcprintf(fmt, ap);
-f0100115:	83 c4 08             	add    $0x8,%esp
-f0100118:	53                   	push   %ebx
-f0100119:	56                   	push   %esi
-f010011a:	e8 cc 08 00 00       	call   f01009eb <vcprintf>
+f0100114:	83 c4 08             	add    $0x8,%esp
+f0100117:	53                   	push   %ebx
+f0100118:	56                   	push   %esi
+f0100119:	e8 cd 08 00 00       	call   f01009eb <vcprintf>
 	cprintf("\n");
-f010011f:	c7 04 24 2e 1a 10 f0 	movl   $0xf0101a2e,(%esp)
-f0100126:	e8 e6 08 00 00       	call   f0100a11 <cprintf>
+f010011e:	c7 04 24 2e 1a 10 f0 	movl   $0xf0101a2e,(%esp)
+f0100125:	e8 e7 08 00 00       	call   f0100a11 <cprintf>
 	va_end(ap);
-f010012b:	83 c4 10             	add    $0x10,%esp
+f010012a:	83 c4 10             	add    $0x10,%esp
 
 dead:
 	/* break into the kernel monitor */
 	while (1)
 		monitor(NULL);
-f010012e:	83 ec 0c             	sub    $0xc,%esp
-f0100131:	6a 00                	push   $0x0
-f0100133:	e8 74 07 00 00       	call   f01008ac <monitor>
-f0100138:	83 c4 10             	add    $0x10,%esp
-f010013b:	eb f1                	jmp    f010012e <_panic+0x48>
+f010012d:	83 ec 0c             	sub    $0xc,%esp
+f0100130:	6a 00                	push   $0x0
+f0100132:	e8 75 07 00 00       	call   f01008ac <monitor>
+f0100137:	83 c4 10             	add    $0x10,%esp
+f010013a:	eb f1                	jmp    f010012d <_panic+0x48>
 
-f010013d <_warn>:
+f010013c <_warn>:
 }
 
 /* like panic, but don't */
 void
 _warn(const char *file, int line, const char *fmt,...)
 {
-f010013d:	55                   	push   %ebp
-f010013e:	89 e5                	mov    %esp,%ebp
-f0100140:	53                   	push   %ebx
-f0100141:	83 ec 08             	sub    $0x8,%esp
+f010013c:	55                   	push   %ebp
+f010013d:	89 e5                	mov    %esp,%ebp
+f010013f:	53                   	push   %ebx
+f0100140:	83 ec 08             	sub    $0x8,%esp
 	va_list ap;
 
 	va_start(ap, fmt);
-f0100144:	8d 5d 14             	lea    0x14(%ebp),%ebx
+f0100143:	8d 5d 14             	lea    0x14(%ebp),%ebx
 	cprintf("kernel warning at %s:%d: ", file, line);
-f0100147:	ff 75 0c             	pushl  0xc(%ebp)
-f010014a:	ff 75 08             	pushl  0x8(%ebp)
-f010014d:	68 0a 1a 10 f0       	push   $0xf0101a0a
-f0100152:	e8 ba 08 00 00       	call   f0100a11 <cprintf>
+f0100146:	ff 75 0c             	pushl  0xc(%ebp)
+f0100149:	ff 75 08             	pushl  0x8(%ebp)
+f010014c:	68 0a 1a 10 f0       	push   $0xf0101a0a
+f0100151:	e8 bb 08 00 00       	call   f0100a11 <cprintf>
 	vcprintf(fmt, ap);
-f0100157:	83 c4 08             	add    $0x8,%esp
-f010015a:	53                   	push   %ebx
-f010015b:	ff 75 10             	pushl  0x10(%ebp)
-f010015e:	e8 88 08 00 00       	call   f01009eb <vcprintf>
+f0100156:	83 c4 08             	add    $0x8,%esp
+f0100159:	53                   	push   %ebx
+f010015a:	ff 75 10             	pushl  0x10(%ebp)
+f010015d:	e8 89 08 00 00       	call   f01009eb <vcprintf>
 	cprintf("\n");
-f0100163:	c7 04 24 2e 1a 10 f0 	movl   $0xf0101a2e,(%esp)
-f010016a:	e8 a2 08 00 00       	call   f0100a11 <cprintf>
+f0100162:	c7 04 24 2e 1a 10 f0 	movl   $0xf0101a2e,(%esp)
+f0100169:	e8 a3 08 00 00       	call   f0100a11 <cprintf>
 	va_end(ap);
-f010016f:	83 c4 10             	add    $0x10,%esp
+f010016e:	83 c4 10             	add    $0x10,%esp
 }
-f0100172:	8b 5d fc             	mov    -0x4(%ebp),%ebx
-f0100175:	c9                   	leave  
-f0100176:	c3                   	ret    
+f0100171:	8b 5d fc             	mov    -0x4(%ebp),%ebx
+f0100174:	c9                   	leave  
+f0100175:	c3                   	ret    
 	...
 
 f0100178 <delay>:
@@ -2005,7 +2006,7 @@ f0100b9b:	83 ec 04             	sub    $0x4,%esp
 f0100b9e:	68 da 20 10 f0       	push   $0xf01020da
 f0100ba3:	6a 7f                	push   $0x7f
 f0100ba5:	68 e7 20 10 f0       	push   $0xf01020e7
-f0100baa:	e8 37 f5 ff ff       	call   f01000e6 <_panic>
+f0100baa:	e8 36 f5 ff ff       	call   f01000e5 <_panic>
 	}
 
 	// String table validity checks

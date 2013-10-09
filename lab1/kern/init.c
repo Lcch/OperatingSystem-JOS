@@ -22,7 +22,7 @@ test_backtrace(int x)
 void
 i386_init(void)
 {
-	extern char edata[], end[];
+	extern char * edata, * end;
 
 	// Before doing anything else, complete the ELF loading process.
 	// Clear the uninitialized global data (BSS) section of our program.

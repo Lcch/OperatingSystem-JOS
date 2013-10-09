@@ -147,7 +147,6 @@ mem_init(void)
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
     pages = (struct PageInfo *) boot_alloc(npages * sizeof(struct PageInfo));
-    cprintf("%u \n", sizeof(struct PageInfo)); 
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -157,9 +156,21 @@ mem_init(void)
 	// or page_insert
 	page_init();
 
+
+    // cprintf("GGG %08x\n", (uint32_t)page2pa(page_free_list));
+
 	check_page_free_list(1);
+
+    // cprintf("%08x\n", (uint32_t)page2pa(page_free_list));
+
 	check_page_alloc();
-    check_page();
+
+    // cprintf("%08x\n", (uint32_t)page2pa(page_free_list));
+
+	check_page();
+
+    // cprintf("%08x\n", (uint32_t)page2pa(page_free_list));
+
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -176,6 +187,7 @@ mem_init(void)
                     ROUNDUP(npages * sizeof(struct PageInfo), PGSIZE), 
                     PADDR(pages),
                     PTE_U);
+
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -363,7 +375,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
     if (pgdir[PDX(va)] == 0 || (pgdir[PDX(va)] & PTE_P) == 0) {
         // page table is not exist
         if (create == false) return NULL;
-        struct PageInfo * new_page = page_alloc(1);
+        struct PageInfo * new_page = page_alloc(ALLOC_ZERO);
         if (new_page == NULL) return NULL;      // allocation fails
         ++new_page->pp_ref;
         pgdir[PDX(va)] = page2pa(new_page) | PTE_P | PTE_W | PTE_U;

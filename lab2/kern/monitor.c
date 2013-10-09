@@ -30,7 +30,8 @@ static struct Command commands[] = {
     { "setcolor", "Change the console color", mon_setcolor },
     { "showmappings", "Show virtual addresses mappings", mon_showmappings },
     { "setpermission", "set permission", mon_setpermission },
-    { "dump", "dump contents in memory", mon_dump }
+    { "dump", "dump contents in memory", mon_dump },
+    { "kernelpd", "show kernel page directory", mon_kernelpd}
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -214,6 +215,24 @@ mon_dump(int argc, char **argv, struct Trapframe *tf)
     return 0;
 }
 
+int 
+mon_kernelpd(int argc, char **argv, struct Trapframe *tf)
+{
+    if (argc != 2) {
+        cprintf("Command should be: kernelpd [entry_num]\n");
+        cprintf("Example: kernelpd 0x01\n");
+        cprintf("         show kernel page directory[1] infomation \n");
+    } else {
+        uint32_t id = strtol(argv[1], NULL, 0);
+        if (0 > id || id >= 1024) {
+            cprintf("out of entry num, it should be in [0, 1024)\n");
+        } else {
+            cprintf("pgdir[%d] = 0x%08x\n", id, (uint32_t)kern_pgdir[id]);
+        }
+    }
+    return 0;
+}
+
 int
 mon_showmappings(int argc, char **argv, struct Trapframe *tf)
 {
@@ -303,7 +322,6 @@ monitor(struct Trapframe *tf)
 
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
-
 
 	while (1) {
 		buf = readline("K> ");

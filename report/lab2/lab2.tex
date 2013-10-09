@@ -330,7 +330,9 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 \begin{section}{Part 3: Kernel Address Space}
 \begin{subsection}{Exercise 5}
 \par
-在建立新的页寻址的时候，我们需要建立好新的映射。这样当我们将cr3指向新的Page Directory的时候就可以立即使用新的页寻址了。\par
+在建立新的页寻址的时候，我们需要建立好新的映射。这样当我们将cr3指向新的Page Directory的时候就可以立即使用新的页寻址了。
+\par
+JOS将ULIM以上的部分都作为Kernel的部分，不允许用户访问，用户只能访问和使用ULIM一下的部分\par
 按照JOS的要求：\par
 1、[UPAGES, UPAGES + sizeof(PAGE))将会映射到[pages, pages + sizeof(PAGE))以用于页面管理。 \par
 2、[KSTACKTOP-KSTKSIZE, KSTACKTOP) 将会映射到内核栈的实际物理地址，即在内核编译时.data预留的一段区域，[bootstack, bootstacktop)。但是并不是所有都用于实际的栈中，栈有一部分将会作为guard page，以防止内核栈溢出造成内核代码或数据的破坏，因此需要预留防止溢出的区域，并且这段区域不映射，当使用这个区域的时候将会造成page fault，因此来保护操作系统内核。\par
@@ -354,7 +356,6 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
                     PADDR(bootstack),
                     PTE_W);
 \end{lstlisting}
-
 \end{subsubsection}
 \begin{subsubsection}{map all of physical memory}
 \begin{lstlisting}[language=C]
@@ -377,11 +378,11 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 \begin{center}
     \begin{tabular}{ | l | l | l |}
     \hline
-           Base Virtual Address & Points to (logically): \\ \hline
-           ef000000-ef020000   &  pages \\ \hline
-           ef7bc000-ef7ff000   &  ??    \\ \hline
-           efff8000-effff000   &  Stack  \\ \hline
-           f0000000-fffff000   &  KERN and Other  \\   
+           Base Virtual Address & Points to (logically): 	\\ \hline
+           ef000000-ef020fff   &  pages 						\\ \hline
+           ef7bc000-ef7fffff   &  recursively insert itself     \\ \hline
+           efff8000-efffffff   &  Stack 							\\ \hline
+           f0000000-ffffffff   &  KERN and Other \\   
     \hline
     \end{tabular}
 \end{center}
@@ -590,6 +591,34 @@ mon_dump(int argc, char **argv, struct Trapframe *tf)
 \end{lstlisting}
 \includegraphics[scale=0.5]{dump.png}
 \end{subsubsection}
+
+\begin{subsubsection}{ my tool fun }
+\par
+我写了一个查看page directory项的函数
+\begin{lstlisting}[language=C]
+int 
+mon_kernelpd(int argc, char **argv, struct Trapframe *tf)
+{
+    if (argc != 2) {
+        cprintf("Command should be: kernelpd [entry_num]\n");
+        cprintf("Example: kernelpd 0x01\n");
+        cprintf("         show kernel page directory[1] infomation \n");
+    } else {
+        uint32_t id = strtol(argv[1], NULL, 0);
+        if (0 > id || id >= 1024) {
+            cprintf("out of entry num, it should be in [0, 1024)\n");
+        } else {
+            cprintf("pgdir[%d] = 0x%08x\n", id, (uint32_t)kern_pgdir[id]);
+        }
+    }
+    return 0;
+}
+\end{lstlisting}
+\par
+没什么好说的
+\includegraphics[scale=0.5]{kernelpd.png}
+\end{subsubsection}
+
 \end{subsection}
 
 \begin{subsection}{Challenge 3:}
@@ -603,6 +632,32 @@ mon_dump(int argc, char **argv, struct Trapframe *tf)
 
 \end{section}
 
+\begin{section}{ Something Interesting... }
+\begin{subsection}{ Mem }
+\par
+ Lab1可知初始的页将[0, 4M) , [KERNBASE, KERNBASE + 4M) 映射到了[0, 4M)的地方。而我们有16639个可以分配页，最大的可用的地址显然超过了4M也就是没被映射，而在boot\_map\_region里面却使用了该地址的解引用( *pte = ....)，为什么没有出错？
+\par
+因为在check\_page\_free\_list()里面他帮我们做了剔除没有被原来4M的页的操作。 太邪恶了，我还思索了很久。
+\end{subsection}
+
+\begin{subsection}{ Self-Reference in Page Directory }
+\par
+在mem\_init(void)中有这样一句话：
+\begin{lstlisting}[language=C]
+	//////////////////////////////////////////////////////////////////////
+	// Recursively insert PD in itself as a page table, to form
+	// a virtual page table at virtual address UVPT.
+	// (For now, you don't have understand the greater purpose of the
+	// following line.)
+
+	// Permissions: kernel R, user R
+	kern_pgdir[PDX(UVPT)] = PADDR(kern_pgdir) | PTE_U | PTE_P;
+\end{lstlisting}
+\par
+就是在UVPT的page table映射指向了自己，我实在不清楚这样做的意义在哪里？唯一可以想到的只有这个地方可以让用户态的进程只读这块。好吧，我现在还不知道答案。。。
+\end{subsection}
+
+\end{section}
 
 \end{document}
 

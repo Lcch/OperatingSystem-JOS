@@ -19,4 +19,6 @@ int mon_setcolor(int argc, char **argv, struct Trapframe *tf);
 int mon_showmappings(int argc, char **argv, struct Trapframe *tf);
 int mon_setpermission(int argc, char **argv, struct Trapframe *tf);
 int mon_dump(int argc, char **argv, struct Trapframe *tf);
+int mon_kernelpd(int argc, char **argv, struct Trapframe *tf);
+
 #endif	// !JOS_KERN_MONITOR_H

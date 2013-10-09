@@ -66,6 +66,8 @@ entry:
 	# C code.
 	mov	$relocated, %eax
 	jmp	*%eax
+    # jmp relocated
+
 relocated:
 
 	# Clear the frame pointer register (EBP)

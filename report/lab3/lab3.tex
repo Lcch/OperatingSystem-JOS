@@ -423,11 +423,60 @@ trap_init(void)
 好吧，看来Exercise4写挫了。。。得重写了
 \end{subsection}
 
+\begin{subsection}{ Question }
+\par
+1. 有的中断需要error code，有的中断不需要。同时无法保存对应的中断号。因此需要分开处理。
+\par
+2. 因为IDT中设置page fault只能允许内核产生这种终端，如果在用户态产生page fault则会触发general protection fault。
+\par
+如果用户可以随意产生page fault，则可能有恶意的进程疯狂产生page fault将整个内存空间占满。因此page fault只能在内核中处理。
+\end{subsection}
+\end{section}
 
+\begin{section}{ Part B }
+\begin{subsection}{ Exercise 5 }
+\par
+根据trapno来分配即可
+\begin{lstlisting}[language=C]
+    switch (tf->tf_trapno) {
+        case T_PGFLT:
+            page_fault_handler(tf);
+            break;
+        default:
+            break;
+    }
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{ Exercise 6 }
+\par
+同理
+\begin{lstlisting}[language=C]
+    switch (tf->tf_trapno) {
+        case T_PGFLT:
+            page_fault_handler(tf);
+            break;
+        case T_BRKPT:
+            monitor(tf); 
+            break;
+        default:
+            break;
+    }
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{ Challenge }
+\end{subsection}
+
+\begin{subsection}{ Question }
+\par
+3. 由于breakpoint的陷阱是可以面向用户态的进程的，因此需要将IDT的特权位置1，允许用户态进程使用。如果不设置则用户无法使用断点中断。
+\par
+4. 
+\end{subsection}
 
 
 \end{section}
-
 
 \end{document}
 

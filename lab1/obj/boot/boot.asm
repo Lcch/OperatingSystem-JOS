@@ -57,11 +57,11 @@ seta20.2:
     7c1a:	b0 df                	mov    $0xdf,%al
   outb    %al,$0x60
     7c1c:	e6 60                	out    %al,$0x60
-
   # Switch from real to protected mode, using a bootstrap GDT
   # and segment translation that makes virtual addresses 
   # identical to their physical addresses, so that the 
   # effective memory map does not change during the switch.
+  
   lgdt    gdtdesc
     7c1e:	0f 01 16             	lgdtl  (%esi)
     7c21:	64                   	fs
