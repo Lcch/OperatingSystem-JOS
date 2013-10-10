@@ -14,13 +14,8 @@ env_setup_vm in
 env_setup_vm out
 [00000000] new env 00001000
 Incoming TRAP frame at 0xefffffbc
-TRAPNO : 48
-0
-fover sys cputs
 Incoming TRAP frame at 0xefffffbc
-TRAPNO : 48
-3
-[00001000] exiting gracefully
+[00001000] user_mem_check assertion failure for va f010000c
 [00001000] free env 00001000
 Destroyed the only environment - nothing more to do!
 Welcome to the JOS kernel monitor!

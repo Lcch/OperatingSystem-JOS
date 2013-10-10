@@ -210,7 +210,7 @@ mem_init(void)
                     KERNBASE,
                     -KERNBASE,
                     0,
-                    PTE_W);     
+                    PTE_W | PTE_PS);     
     // in 32-bit system, 2^32 - KERNBASE = - KERNBASE
     
 	// Check that the initial page directory has been set up correctly.
@@ -223,6 +223,7 @@ mem_init(void)
 	//
 	// If the machine reboots at this point, you've probably set up your
 	// kern_pgdir wrong.
+	lcr4(CR4_PSE);					// Open Size Page Extension
 	lcr3(PADDR(kern_pgdir));
 
 	check_page_free_list(0);

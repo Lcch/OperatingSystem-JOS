@@ -184,10 +184,13 @@ trap_dispatch(struct Trapframe *tf)
 	// LAB 3: Your code here.
     
     int r;
-    cprintf("TRAPNO : %d\n", tf->tf_trapno);
+    // cprintf("TRAPNO : %d\n", tf->tf_trapno);
     switch (tf->tf_trapno) {
         case T_PGFLT:
-            page_fault_handler(tf);
+        	if (tf->tf_cs == GD_KT)
+        		panic("page fault in kernel");
+        	else
+        		page_fault_handler(tf);
             break;
         case T_BRKPT:
             monitor(tf); 

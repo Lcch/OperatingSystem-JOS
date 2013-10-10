@@ -478,7 +478,19 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 }
 \end{lstlisting}
 \par
-但是，竟然运行Triple fault，调了很久似乎没有发现错误，于是我上网发现4M-page在64位环境是不支持的，我的系统是64位的Ubuntu，是不是这个原因呢？我决定明天找同学的电脑来测试一下。
+但是，竟然运行Triple fault，调了很久似乎没有发现错误，后来才发现我忘记设置开关了。
+\par
+在cr4中的bit 4是Page Size Extension位，表示可以启用4M的大页寻址。因此在导入新的页目录前将cr4开启Page Size Extension就可以了。即：
+\begin{lstlisting}[language=C]
+	lcr4(CR4_PSE);					// Open Size Page Extension
+	lcr3(PADDR(kern_pgdir));
+\end{lstlisting}
+\par
+实验效果如下：
+\paragraph{•}
+\includegraphics[scale=0.5]{PSE.png}
+\par
+其中Flag中标注为S即使用了4M大页查询。
 \end{subsection}
 
 \begin{subsection}{Challenge 2:}
