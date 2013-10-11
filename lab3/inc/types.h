@@ -9,6 +9,11 @@
 typedef _Bool bool;
 enum { false, true };
 
+// MSRs(model specific registers) SYSENTER
+#define IA32_SYSENTER_CS	0x174
+#define IA32_SYSENTER_ESP	0x175
+#define IA32_SYSENTER_EIP	0x176
+
 // Explicitly-sized versions of integer types
 typedef __signed char int8_t;
 typedef unsigned char uint8_t;

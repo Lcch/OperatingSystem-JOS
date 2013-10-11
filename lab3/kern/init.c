@@ -3,6 +3,7 @@
 #include <inc/stdio.h>
 #include <inc/string.h>
 #include <inc/assert.h>
+#include <inc/x86.h>
 
 #include <kern/monitor.h>
 #include <kern/console.h>
@@ -11,6 +12,16 @@
 #include <kern/env.h>
 #include <kern/trap.h>
 
+void msrs_init()
+{
+	// set up model specific registers
+	extern void sysenter_handler();
+
+	// GD_KT is kernel code segment, is also CS register
+	wrmsr(IA32_SYSENTER_CS, GD_KT, 0);
+	wrmsr(IA32_SYSENTER_ESP, KSTACKTOP, 0);
+	wrmsr(IA32_SYSENTER_EIP, (uint32_t)(sysenter_handler), 0);		// entry of sysenter
+}
 
 void
 i386_init(void)
@@ -26,26 +37,20 @@ i386_init(void)
 	// Can't call cprintf until after we do this!
 	cons_init();
 
-//    int x = 1, y = 3, z = 4;
-//    cprintf("x %d, y %x, z %d\n", x, y, z);
-
-//    unsigned int i = 0x00646c72;
-//    cprintf("H%x Wo%s\n", 57616, &i);
-
-//    cprintf("x=%d y=%d", 3, 4);
-//    cprintf("x=%d y=%d", 3);
-
 	cprintf("6828 decimal is %o octal!\n", 6828);
 
 	// Lab 2 memory management initialization functions
 	mem_init();
 
-    cprintf("mem_init done! \n");
+	// MSRs init:
+	msrs_init();
+
+    // cprintf("mem_init done! \n");
 	// Lab 3 user environment initialization functions
 	env_init();
-    cprintf("env_init done! \n");
+    // cprintf("env_init done! \n");
 	trap_init();
-    cprintf("trap_init done! \n");
+    // cprintf("trap_init done! \n");
 
 #if defined(TEST)
 	// Don't touch -- used by grading script!

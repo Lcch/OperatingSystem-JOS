@@ -116,3 +116,34 @@ _alltraps:
 	pushl %esp
 	call trap
 
+.globl sysenter_handler
+.type sysenter_handler, @function
+sysenter_handler:
+
+	pushl %esi;
+	pushl %ebp;
+	# pushl %oesp  (Useless)
+	pushl %ebx;
+
+	pushl $0     # in most of syscall, last argument will be 0
+	pushl %edi
+	pushl %ebx
+	pushl %ecx
+	pushl %edx
+	pushl %eax
+	call syscall
+	popl %edx
+	popl %edx
+	popl %ecx
+	popl %ebx
+	popl %edi
+	popl %ecx	# %ecx will be covered by %ebp, so it will be ok
+
+	popl %ebx;
+	#popl %oesp  (Useless)
+	popl %ebp;	
+	popl %esi;
+	movl %esi, %edx
+	movl %ebp, %ecx
+	sysexit
+

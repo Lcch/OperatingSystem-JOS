@@ -736,7 +736,162 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 \end{subsection}
 
 \begin{subsection}{ Challenge 3 }
+\par
+让我们重新看看JOS中用户进程调用系统调用的情景：
+\par
+用户调用lib/syscall，syscall会根据参数生成汇编代码，通过int 0x30进入系统调用的中断，通过中断进入内核态的对应中断的入口，跳转到trap函数中，根据中断号为0x30，则进入syscall的处理程序，再根据syscall\_no来调用对应的系统调用执行程序，执行完后若无错误，则返回至trap部分直接通过恢复env来恢复到原来的运行状况。
+\par
+sysenter和sysexit这两个指令，是Intel专门用来加速int和iret的。其通过寄存器传参快速到达syscall中，而不需要通过中断进入内核态再通过trap的分发来到达syscall的执行程序。其中会用到3个特殊的寄存器称为model specific registers(MSRs)。这三个寄存器分别是：\par
+(1) IA32\_SYSENTER\_CS(174H): 保存着内核态的CS段值		\par
+(2) IA32\_SYSENTER\_ESP(175H):	保存着内核态的栈，在JOS就是KSTACKTOP \par
+(3) IA32\_SYSENTER\_EIP(176H):	保存着sysenter\_handler的代码的地址 \par  
+~\\
+我们再来看看sysenter和sysexit具体会干什么： 	\par
+当sysenter执行时，处理器会依次执行： 			\par
+1.将IA32\_SYSENTER\_CS的值导入CS寄存器中		\par
+2.将IA32\_SYSENTER\_EIP导入EIP寄存器中		\par
+3.将IA32\_SYSENTER\_CS + 8导入SS寄存器中		\par
+4.将IA32\_SYSENTER\_ESP导入ESP寄存器中		\par
+5.将权限为设置为0,即最高权限					\par
+6.清理EFLAGS寄存器中的VM flag				\par
+7.开始按照CS和EIP进行执行					\\
+而当sysexit执行时，处理器会以此执行：			\par
+1.将16+IA32\_SYSENTER\_CS导入CS寄存器中		\par
+2.将EDX导入EIP中							\par
+3.将24+IA32\_SYSENTER\_CS导入SS寄存器中		\par
+4.将ECX导入ESP中							\par
+5.将权限位设置为3，即最低权限				\par
+6.根据EIP执行，即回到用户程序中				\par
+~\\
+通过这个我想到了一个方式来解决实现sysenter和sysexit，即通过合理分配好寄存器来实现系统调用：	\\
+0.初始化IA32\_SYSENTER\_CS, IA32\_SYSENTER\_ESP, IA32\_SYSENTER\_EIP在内核启动时，IA32\_SYSENTER\_EIP指向sysenter\_handler。 \\
+1.当用户调用系统调用的时候，先保存现场，将所有寄存器进行备份，并且将返回sysenter的地址放入\%esi中，\%esp保存在\%ebp中，并将系统调用的所有参数都保存在相应的寄存器中。\\
+2.调用sysenter，则会跳到sysenter\_handler上（这个时候已经在内核态了）		\\
+3.sysenter\_handler保存寄存器，并将参数保存在栈中，调用syscall。			\\
+4.待syscall回来后，恢复除\%eax外的所有寄存器								\\
+5.将\%esi导入\%edx，将\%ebp导入\%ecx中，这两个寄存器保存着进入返回用户进程的eip和esp。		\\
+6.调用sysexit。	\\
+~\\
+具体实现如下：	
+\begin{subsubsection}{ Step. 0 implementation }
+\par
+在inc/types增加宏	\par
+\begin{lstlisting}[language=C]
+// in inc/types:
+// MSRs(model specific registers) SYSENTER
+#define IA32_SYSENTER_CS	0x174
+#define IA32_SYSENTER_ESP	0x175
+#define IA32_SYSENTER_EIP	0x176
+\end{lstlisting}
 
+\par
+在inc/x86.h中增加wrmsr的宏	\par
+\begin{lstlisting}[language=C]
+// in inc/x86.h:
+#define wrmsr(msr, val1, val2) \
+	__asm__ __volatile__("wrmsr" \
+	: /* no outputs */ \
+	: "c" (msr), "a" (val1), "d" (val2))
+\end{lstlisting}
+
+\par
+在kern/init.c增加初始化函数，并在i386\_init中调用	\par
+\begin{lstlisting}[language=C]
+void msrs_init()
+{
+	// set up model specific registers
+	extern void sysenter_handler();
+
+	// GD_KT is kernel code segment, is also CS register
+	wrmsr(IA32_SYSENTER_CS, GD_KT, 0);
+	wrmsr(IA32_SYSENTER_ESP, KSTACKTOP, 0);
+	wrmsr(IA32_SYSENTER_EIP, (uint32_t)(sysenter_handler), 0);		// entry of sysenter
+}
+\end{lstlisting}
+\end{subsubsection}
+
+\begin{subsubsection}{ Step. 1 \& 2 implementation }
+\par
+在lib/system中增加函数my\_sysenter提供给用户进程通过sysenter来系统调用的接口：\par
+对于ESP的保存很简单，如何保存EIP，从Challenge的材料中得知非常技巧的实现方式，通过leal一个标记代码的地址即可。	\par
+\begin{lstlisting}[language=C]
+// Use my_sysenter, a5 must be 0.
+// Attention: it will not update trapframe
+static int32_t
+my_sysenter(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
+{
+	assert(a5 == 0);
+	int32_t ret;
+
+	asm volatile(
+		"pushl %%ebp\n\t"
+		"pushl %%esp\n\t"
+		"popl %%ebp\n\t"
+		"leal after_sysenter_label, %%esi\n\t"
+		"sysenter\n\t"
+		"after_sysenter_label:\n\t"
+		"popl %%ebp"
+		: "=a" (ret)
+		: "a" (num),
+		  "d" (a1),
+		  "c" (a2),
+		  "b" (a3),
+		  "D" (a4),
+		  "S" (a5)
+		: "cc", "memory");
+	
+	if(check && ret > 0)
+		panic("my_sysenter %d returned %d (> 0)", num, ret);
+
+	return ret;
+}
+\end{lstlisting}
+\end{subsubsection}
+
+\begin{subsubsection}{ Step. 3 - 6 implementation }
+\par
+在trapentry.S中增加一个函数sysenter\_handler即可，里面参数保存在栈中，然后调用syscall即可。记得\%eax不要恢复值，因为其保存着返回值。由于sysenter调用导致参数传递不足，但是我发现JOS提供的系统调用中最后一个参数都是0，因此我就直接扔0在最后一个参数了。\par
+\begin{lstlisting}[language=C]
+.globl sysenter_handler
+.type sysenter_handler, 'at' function
+sysenter_handler:
+
+	pushl %esi;
+	pushl %ebp;
+	# pushl %oesp  (Useless)
+	pushl %ebx;
+
+	pushl $0     # in most of syscall, last argument will be 0
+	pushl %edi
+	pushl %ebx
+	pushl %ecx
+	pushl %edx
+	pushl %eax
+	call syscall
+	popl %edx
+	popl %edx
+	popl %ecx
+	popl %ebx
+	popl %edi
+	popl %ecx	# %ecx will be covered by %ebp, so it will be ok
+
+	popl %ebx;
+	#popl %oesp  (Useless)
+	popl %ebp;	
+	popl %esi;
+	movl %esi, %edx
+	movl %ebp, %ecx
+	sysexit
+\end{lstlisting}
+\end{subsubsection}
+
+\par
+这个Challenge开始完全一头雾水，看了IA32的手册再wiki了很多东西才大概清楚，在实现过程中因为很多寄存器的使用不当，例如忘记保存之类的造成了很多次的错误。还有一次保存了所有的寄存器，还恢复了所有的寄存器，连\%eax这个返回值也恢复了，然后就瞎了。不过历经多次gdb调试终于成功了。我将lib/system.c中的所有系统调用都使用my\_sysenter来调用，进行make run-hello和make grade的测试：\par
+\par
+在make run-hello没有进入trap的中断中也将hello world打印了出来。并且通过了所有的make grade的测试。大功告成！！！\par
+\includegraphics[scale=0.5]{ch3.png}
+\par
+注意：材料也说了，这种调用方式不使用，因为不会更新curenv的trapframe。
 \end{subsection}
 
 \begin{subsection}{ Exercise 8 }

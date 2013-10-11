@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.1415926-2.4-0.9998 (TeX Live 2012/Debian) (format=xelatex 2013.10.1)  11 OCT 2013 19:02
+This is XeTeX, Version 3.1415926-2.4-0.9998 (TeX Live 2012/Debian) (format=xelatex 2013.10.1)  12 OCT 2013 02:19
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1250,18 +1250,18 @@ LaTeX Info: Redefining \nameref on input line 56.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-(./lab3.toc)
-\tf@toc=\write4
-\openout4 = `lab3.toc'.
-
-
+(./lab3.toc
 (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/se-ascii-print.def
 File: se-ascii-print.def 2011/12/02 v1.10 stringenc: Printable ASCII characters
 
 )
 [1
 
-]
+])
+\tf@toc=\write4
+\openout4 = `lab3.toc'.
+
+ [2]
 LaTeX Font Info:    Try loading font information for EU1+lmtt on input line 90.
 
  (/usr/share/texlive/texmf-dist/tex/latex/euenc/eu1lmtt.fd
@@ -1303,36 +1303,44 @@ talicFont={*},BoldItalicFont={*},SlantedFont={*},BoldSlantedFont={*}].
 .................................................
 LaTeX Font Info:    Font shape `EU1/lmtt/bx/n' in size <8> not available
 (Font)              Font shape `EU1/lmtt/b/n' tried instead on input line 91.
- [2] [3] [4]
-[5] [6]
+ [3]
+[4] [5] [6] [7]
 File: IDTGateDescriptors.png Graphic file (type QTm)
  <use  "IDTGateDescriptors.png" >
 Overfull \hbox (6.00468pt too wide) in paragraph at lines 359--362
 [] \EU1/SimSun(0)/m/n/10 因
  []
 
-[7] [8] [9] [10] [11] [12]
+[8] [9] [10] [11] [12] [13]
 File: continue.png Graphic file (type QTm)
- <use  "continue.png" > [13]
+ <use  "continue.png" > [14]
 File: step.png Graphic file (type QTm)
  <use  "step.png" >
-[14] [15] [16] [17]
+[15] [16] [17] [18]
+Underfull \hbox (badness 10000) in paragraph at lines 765--776
+
+ []
+
+[19] [20]
+File: ch3.png Graphic file (type QTm)
+ <use  "ch3.png" > [21] [22] [23]
 File: backtrace.png Graphic file (type QTm)
- <use  "backtrace.png" > [18]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 847.
- [19]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 847.
- (./lab3.aux)
-Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 847.
-Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 847.
+ <use  "backtrace.png" >
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1002.
+ [24]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1002.
+
+(./lab3.aux)
+Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 1002.
+Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 1002.
  ) 
 Here is how much of TeX's memory you used:
- 24394 strings out of 494003
- 466207 string characters out of 3152809
- 656004 words of memory out of 3000000
- 27304 multiletter control sequences out of 15000+200000
+ 24490 strings out of 494003
+ 467551 string characters out of 3152809
+ 662004 words of memory out of 3000000
+ 27399 multiletter control sequences out of 15000+200000
  8348 words of font info for 60 fonts, out of 3000000 for 9000
  1144 hyphenation exceptions out of 8191
- 56i,12n,56p,837b,1950s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 56i,12n,56p,837b,1955s stack positions out of 5000i,500n,10000p,200000b,50000s
 
-Output written on lab3.pdf (19 pages).
+Output written on lab3.pdf (24 pages).

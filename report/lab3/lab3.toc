@@ -1,24 +1,27 @@
-\contentsline {section}{\numberline {1} Part A: User Environments and Exception Handling }{2}{section.1}
-\contentsline {subsection}{\numberline {1.1} Exercise 1 }{2}{subsection.1.1}
-\contentsline {subsection}{\numberline {1.2} Exercise 2 }{2}{subsection.1.2}
-\contentsline {subsubsection}{\numberline {1.2.1}env\_init}{2}{subsubsection.1.2.1}
-\contentsline {subsubsection}{\numberline {1.2.2}env\_setup\_vm}{3}{subsubsection.1.2.2}
-\contentsline {subsubsection}{\numberline {1.2.3}region\_alloc}{3}{subsubsection.1.2.3}
-\contentsline {subsubsection}{\numberline {1.2.4}load\_icode}{4}{subsubsection.1.2.4}
-\contentsline {subsubsection}{\numberline {1.2.5}env\_create}{5}{subsubsection.1.2.5}
-\contentsline {subsubsection}{\numberline {1.2.6}env\_run}{5}{subsubsection.1.2.6}
-\contentsline {subsection}{\numberline {1.3} Exercise 3 }{5}{subsection.1.3}
-\contentsline {subsection}{\numberline {1.4} Exercise 4 }{5}{subsection.1.4}
-\contentsline {subsubsection}{\numberline {1.4.1} trapentry.S }{6}{subsubsection.1.4.1}
-\contentsline {subsubsection}{\numberline {1.4.2} trap\_init }{8}{subsubsection.1.4.2}
-\contentsline {subsection}{\numberline {1.5} Challenge 1 }{10}{subsection.1.5}
-\contentsline {subsection}{\numberline {1.6} Question }{11}{subsection.1.6}
-\contentsline {section}{\numberline {2} Part B: Page Faults, Breakpoints Exceptions, and System Calls }{12}{section.2}
-\contentsline {subsection}{\numberline {2.1} Exercise 5 \& Exercise 6}{12}{subsection.2.1}
-\contentsline {subsection}{\numberline {2.2} Challenge 2 }{12}{subsection.2.2}
-\contentsline {subsection}{\numberline {2.3} Question }{15}{subsection.2.3}
-\contentsline {subsection}{\numberline {2.4} Exercise 7 }{15}{subsection.2.4}
-\contentsline {subsection}{\numberline {2.5} Challenge 3 }{17}{subsection.2.5}
-\contentsline {subsection}{\numberline {2.6} Exercise 8 }{17}{subsection.2.6}
-\contentsline {subsection}{\numberline {2.7} Exercise 9 }{17}{subsection.2.7}
-\contentsline {subsection}{\numberline {2.8} Exercise 10 }{19}{subsection.2.8}
+\contentsline {section}{\numberline {1} Part A: User Environments and Exception Handling }{3}{section.1}
+\contentsline {subsection}{\numberline {1.1} Exercise 1 }{3}{subsection.1.1}
+\contentsline {subsection}{\numberline {1.2} Exercise 2 }{3}{subsection.1.2}
+\contentsline {subsubsection}{\numberline {1.2.1}env\_init}{3}{subsubsection.1.2.1}
+\contentsline {subsubsection}{\numberline {1.2.2}env\_setup\_vm}{4}{subsubsection.1.2.2}
+\contentsline {subsubsection}{\numberline {1.2.3}region\_alloc}{4}{subsubsection.1.2.3}
+\contentsline {subsubsection}{\numberline {1.2.4}load\_icode}{5}{subsubsection.1.2.4}
+\contentsline {subsubsection}{\numberline {1.2.5}env\_create}{6}{subsubsection.1.2.5}
+\contentsline {subsubsection}{\numberline {1.2.6}env\_run}{6}{subsubsection.1.2.6}
+\contentsline {subsection}{\numberline {1.3} Exercise 3 }{6}{subsection.1.3}
+\contentsline {subsection}{\numberline {1.4} Exercise 4 }{6}{subsection.1.4}
+\contentsline {subsubsection}{\numberline {1.4.1} trapentry.S }{7}{subsubsection.1.4.1}
+\contentsline {subsubsection}{\numberline {1.4.2} trap\_init }{9}{subsubsection.1.4.2}
+\contentsline {subsection}{\numberline {1.5} Challenge 1 }{11}{subsection.1.5}
+\contentsline {subsection}{\numberline {1.6} Question }{12}{subsection.1.6}
+\contentsline {section}{\numberline {2} Part B: Page Faults, Breakpoints Exceptions, and System Calls }{13}{section.2}
+\contentsline {subsection}{\numberline {2.1} Exercise 5 \& Exercise 6}{13}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2} Challenge 2 }{13}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3} Question }{16}{subsection.2.3}
+\contentsline {subsection}{\numberline {2.4} Exercise 7 }{16}{subsection.2.4}
+\contentsline {subsection}{\numberline {2.5} Challenge 3 }{18}{subsection.2.5}
+\contentsline {subsubsection}{\numberline {2.5.1} Step. 0 implementation }{19}{subsubsection.2.5.1}
+\contentsline {subsubsection}{\numberline {2.5.2} Step. 1 \& 2 implementation }{20}{subsubsection.2.5.2}
+\contentsline {subsubsection}{\numberline {2.5.3} Step. 3 - 6 implementation }{20}{subsubsection.2.5.3}
+\contentsline {subsection}{\numberline {2.6} Exercise 8 }{22}{subsection.2.6}
+\contentsline {subsection}{\numberline {2.7} Exercise 9 }{22}{subsection.2.7}
+\contentsline {subsection}{\numberline {2.8} Exercise 10 }{24}{subsection.2.8}
