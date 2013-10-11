@@ -20,6 +20,7 @@
  *   void NAME();
  * where NAME is the argument passed to TRAPHANDLER.
  */
+
 #define TRAPHANDLER(name, num)						\
 	.globl name;		/* define global symbol for 'name' */	\
 	.type name, @function;	/* symbol type is function */		\
@@ -32,41 +33,74 @@
  * It pushes a 0 in place of the error code, so the trap frame has the same
  * format in either case.
  */
-#define TRAPHANDLER_NOEC(name, num)					\
+
+#define TRAPHANDLER_NOEC(name, num)			\
 	.globl name;							\
 	.type name, @function;						\
 	.align 2;							\
 	name:								\
 	pushl $0;							\
-	pushl $(num);							\
+	pushl $(num);						\
 	jmp _alltraps
 
+
+#define MYTH(name, num)			\
+.text;		\
+	.globl name;				\
+	.type name, @function;		\
+	.align 2;			\
+name:				\
+	pushl $(num);		\
+	jmp _alltraps;		\
+.data;				\
+	.long name
+
+
+#define MYTH_NOEC(name, num)	\
+.text;		\
+	.globl name;				\
+	.type name, @function;		\
+	.align 2;			\
+name:				\
+	pushl $0;			\
+	pushl $(num);		\
+	jmp _alltraps;		\
+.data;	 			\
+	.long name      
+
+#define MYTH_NULL()		\
+.data;				\
+	.long 0
+	
+
+.data
+.align 2
+.globl vectors
+vectors:
 .text
- /*
- * Lab 3: Your code here for generating entry points for the different traps.
- */
- 	TRAPHANDLER_NOEC(vec0, T_DIVIDE)
- 	TRAPHANDLER_NOEC(vec1, T_DEBUG)
- 	TRAPHANDLER_NOEC(vec2, T_NMI)
- 	TRAPHANDLER_NOEC(vec3, T_BRKPT)
- 	TRAPHANDLER_NOEC(vec4, T_OFLOW)
-
- 	TRAPHANDLER_NOEC(vec6, T_BOUND)
-	TRAPHANDLER_NOEC(vec7, T_DEVICE)
- 	TRAPHANDLER_NOEC(vec8, T_DBLFLT)
-
- 	TRAPHANDLER(vec10, T_TSS)
- 	TRAPHANDLER(vec11, T_SEGNP)
- 	TRAPHANDLER(vec12, T_STACK)
- 	TRAPHANDLER(vec13, T_GPFLT)
- 	TRAPHANDLER(vec14, T_PGFLT) 
-
- 	TRAPHANDLER_NOEC(vec16, T_FPERR)
- 	TRAPHANDLER(vec17, T_ALIGN)
- 	TRAPHANDLER_NOEC(vec18, T_MCHK)
- 	TRAPHANDLER_NOEC(vec19, T_SIMDERR)
-    
+	MYTH_NOEC(vec0, T_DIVIDE)
+ 	MYTH_NOEC(vec1, T_DEBUG)
+ 	MYTH_NOEC(vec2, T_NMI)
+ 	MYTH_NOEC(vec3, T_BRKPT)
+ 	MYTH_NOEC(vec4, T_OFLOW)
+ 	MYTH_NULL()
+ 	MYTH_NOEC(vec6, T_BOUND)
+	MYTH_NOEC(vec7, T_DEVICE)
+ 	MYTH_NOEC(vec8, T_DBLFLT)
+ 	MYTH_NULL()
+ 	MYTH(vec10, T_TSS)
+ 	MYTH(vec11, T_SEGNP)
+ 	MYTH(vec12, T_STACK)
+ 	MYTH(vec13, T_GPFLT)
+ 	MYTH(vec14, T_PGFLT) 
+ 	MYTH_NULL()
+ 	MYTH_NOEC(vec16, T_FPERR)
+ 	MYTH(vec17, T_ALIGN)
+ 	MYTH_NOEC(vec18, T_MCHK)
+ 	MYTH_NOEC(vec19, T_SIMDERR)
+  	
     TRAPHANDLER_NOEC(vec48, T_SYSCALL)
+
 /*
  * Lab 3: Your code here for _alltraps
  */

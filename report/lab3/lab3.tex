@@ -13,8 +13,17 @@
 \usepackage{algorithmic}
 \usepackage{listings}
 \usepackage{xcolor}
-\lstset{numbers=left, numberstyle=\small, keywordstyle=\color{blue!70}, commentstyle=\color{red!50!green!50!blue!50}, frame=shadowbox, rulesepcolor=\color{red!20!green!20!blue!20},escapeinside=``, xleftmargin=2em,xrightmargin=2em, aboveskip=1em}
+\usepackage{marvosym,listings,etoolbox}
 \usepackage{geometry}
+
+\lstset{numbers=left, numberstyle=\small, keywordstyle=\color{blue!70}, commentstyle=\color{red!50!green!50!blue!50}, frame=shadowbox, rulesepcolor=\color{red!20!green!20!blue!20},escapeinside=``, xleftmargin=2em,xrightmargin=2em, aboveskip=1em, literate={@}{\MVAt}1}
+
+\patchcmd{\verb}{\dospecials}{\dospecials\atspecial}{}{}
+\def\atspecial{\begingroup\lccode`~=`@
+  \lowercase{\endgroup\let~}\MVAt
+  \catcode`@=\active}
+  
+
 
 \newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}%
        
@@ -32,6 +41,7 @@
   stringstyle=\color{orange},
   tabsize=4,
   numbers=none,
+  mathescape=false,
 }
 
 \lstset{escapechar=@,style=customc}
@@ -163,13 +173,16 @@ region_alloc(struct Env *e, void *va, size_t len)
     uint32_t end  = (uint32_t)ROUNDUP(va + len, PGSIZE);
     struct PageInfo *pg;
     // cprintf("region_alloc: %u %u\n", addr, end);
+    int r;
+    // cprintf("region_alloc: %u %u\n", addr, end);
     for ( ; addr != end; addr += PGSIZE) {
         pg = page_alloc(1);
         if (pg == NULL) {
             panic("region_alloc : can't alloc page\n");
         } else {
-            if (page_insert(e->env_pgdir, pg, (void *)addr, PTE_U | PTE_W) != 0) {
-                panic("region_alloc : page_insert fail\n");
+            r = page_insert(e->env_pgdir, pg, (void *)addr, PTE_U | PTE_W);
+            if (r != 0) {
+                panic("/kern/env.c/region_alloc : %e\n", r);
             }
         }
     }
@@ -418,9 +431,97 @@ trap_init(void)
 
 \end{subsection}
 
-\begin{subsection}{ Chanllenge }
+\begin{subsection}{ Challenge 1 }
 \par
 好吧，看来Exercise4写挫了。。。得重写了
+\par
+实际上就是用data构造一个数组，每个数组都指向入口的地址，这样就可以完成了，我重新构建了三个宏，一个是对无error code的，一个是对有error code的，还有一个是对空着的无入口的中断。
+\par
+下面代码中'at'表示@，我的latex貌似显示不出来，查资料也解决不了。
+\par
+\begin{lstlisting}[language=C]
+#define MYTH(name, num)			\
+.text;		\
+	.globl name;				\
+	.type name, 'at'function;		\
+	.align 2;			\
+name:				\
+	pushl $(num);		\
+	jmp _alltraps;		\
+.data;				\
+	.long name
+
+
+#define MYTH_NOEC(name, num)	\
+.text;		\
+	.globl name;				\
+	.type name, 'at'function;		\
+	.align 2;			\
+name:				\
+	pushl $0;			\
+	pushl $(num);		\
+	jmp _alltraps;		\
+.data;	 			\
+	.long name      
+
+#define MYTH_NULL()		\
+.data;				\
+	.long 0
+	
+
+.data
+.align 2
+.globl vectors
+vectors:
+.text
+	MYTH_NOEC(vec0, T_DIVIDE)
+ 	MYTH_NOEC(vec1, T_DEBUG)
+ 	MYTH_NOEC(vec2, T_NMI)
+ 	MYTH_NOEC(vec3, T_BRKPT)
+ 	MYTH_NOEC(vec4, T_OFLOW)
+ 	MYTH_NULL()
+ 	MYTH_NOEC(vec6, T_BOUND)
+	MYTH_NOEC(vec7, T_DEVICE)
+ 	MYTH_NOEC(vec8, T_DBLFLT)
+ 	MYTH_NULL()
+ 	MYTH(vec10, T_TSS)
+ 	MYTH(vec11, T_SEGNP)
+ 	MYTH(vec12, T_STACK)
+ 	MYTH(vec13, T_GPFLT)
+ 	MYTH(vec14, T_PGFLT) 
+ 	MYTH_NULL()
+ 	MYTH_NOEC(vec16, T_FPERR)
+ 	MYTH(vec17, T_ALIGN)
+ 	MYTH_NOEC(vec18, T_MCHK)
+ 	MYTH_NOEC(vec19, T_SIMDERR)
+  	
+    TRAPHANDLER_NOEC(vec48, T_SYSCALL)
+\end{lstlisting}
+\par
+对于初始化trap\_init，只需要按照数组的方式处理即可。方便了很多。代码如下：
+\par
+\begin{lstlisting}[language=C]
+void
+trap_init(void)
+{
+	extern struct Segdesc gdt[];
+    
+    extern uint32_t vectors[];
+    extern void vec48();
+    int i;
+    for (i = 0; i != 20; i++) {
+    	if (i == T_BRKPT) {
+    		SETGATE(idt[i], 0, GD_KT, vectors[i], 3);
+    	} else {
+    		SETGATE(idt[i], 0, GD_KT, vectors[i], 0);
+    	}
+    }
+    SETGATE(idt[48], 0, GD_KT, vec48, 3);
+
+	// Per-CPU setup 
+	trap_init_percpu();
+}
+\end{lstlisting}
 \end{subsection}
 
 \begin{subsection}{ Question }
@@ -433,46 +534,311 @@ trap_init(void)
 \end{subsection}
 \end{section}
 
-\begin{section}{ Part B }
-\begin{subsection}{ Exercise 5 }
+\begin{section}{ Part B: Page Faults, Breakpoints Exceptions, and System Calls }
+\begin{subsection}{ Exercise 5 \& Exercise 6}
 \par
 根据trapno来分配即可
 \begin{lstlisting}[language=C]
+    int r;
     switch (tf->tf_trapno) {
         case T_PGFLT:
-            page_fault_handler(tf);
-            break;
-        default:
-            break;
-    }
-\end{lstlisting}
-\end{subsection}
-
-\begin{subsection}{ Exercise 6 }
-\par
-同理
-\begin{lstlisting}[language=C]
-    switch (tf->tf_trapno) {
-        case T_PGFLT:
-            page_fault_handler(tf);
+        		page_fault_handler(tf);
             break;
         case T_BRKPT:
             monitor(tf); 
             break;
         default:
-            break;
+	        // Unexpected trap: The user process or the kernel has a bug.
+	        print_trapframe(tf);
+	        if (tf->tf_cs == GD_KT)
+		        panic("unhandled trap in kernel");
+	        else {
+		        env_destroy(curenv);
+		        return;
+	        }
     }
 \end{lstlisting}
 \end{subsection}
 
-\begin{subsection}{ Challenge }
+\begin{subsection}{ Challenge 2 }
+\par
+这个challenge就是需要在breakpoint的情况下增加continue和single-step的指令来进行调试。
+\par
+对于continue非常简单，增加一个mon的函数，其直接恢复curenv的enviroment即可。
+\par
+\begin{lstlisting}[language=C]
+int 
+mon_continue(int argc, char **argv, struct Trapframe *tf)
+{
+    if (tf == NULL) {
+        cprintf("Error: you only can use continue in breakpoint.\n");
+        return -1;
+    }
+    
+    tf->tf_eflags &= (~FL_TF);
+    env_run(curenv);    // usually it won't return;
+    panic("mon_continue : env_run return");
+    return 0;
+}
+\end{lstlisting}
+\par
+为了方便之后的测试我改变了一下usr/breakpoint.c的程序：
+\par
+\begin{lstlisting}[language=C]
+#include <inc/lib.h>
+
+void
+umain(int argc, char **argv)
+{
+	asm volatile("int $3");
+
+    // my code:
+    cprintf("hello from A\n");
+    cprintf("hello from B\n");
+ 	cprintf("hello from C\n");   
+}
+\end{lstlisting}
+\par
+然后进行运行，输入continue，发现输出了hello from A, B, C并正常结束，说明成功了！ \par
+\includegraphics[scale=0.5]{continue.png}
+
+\par
+对于single-stepping则需要在tf\_eflags中设置TF位，然后恢复原进程的enviroment，当原进程执行完一条语句后会检查TF位，如果为1，则会自动触发一个int 1即debug exception。然后我们还需要在trap\_dispatch中处理T\_DEBUG, 为了偷懒，我直接使用了breakpoint的处理过程monitor(tf)。:) 
+\par
+\begin{lstlisting}[language=C]
+\\ in trap_dispatch:
+    switch (tf->tf_trapno) {
+    		case T_DEBUG:
+    			monitor(tf);
+    			break;
+    		...
+    	}
+    	
+\\ in monitor.c
+int 
+mon_si(int argc, char **argv, struct Trapframe *tf)
+{
+    if (tf == NULL) {
+        cprintf("Error: you only can use si in breakpoint.\n");
+        return -1;
+    }
+
+    // next step also cause breakpoint interrupt
+    tf->tf_eflags |= FL_TF;
+
+    env_run(curenv);
+    panic("mon_si : env_run return");
+    return 0;
+}
+\end{lstlisting}
+\par
+我又改写了breakpoing.c的程序来测试
+\par
+\begin{lstlisting}[language=C]
+void
+umain(int argc, char **argv)
+{
+	asm volatile("int $3");
+
+ 	// my test for singal stepping
+ 	asm volatile("movl $0x1, %eax");
+ 	asm volatile("movl $0x2, %eax");
+}
+\end{lstlisting}
+\par
+我们来通过测试来观察\%eax的变化，为了方便看，我暂时注释掉print\_trapframe中的一些信息，只保留\%eax的值。结果如下：
+\par
+\includegraphics[scale=0.5]{step.png}
+\par
+完全符合预期，哈哈，搞定了！
 \end{subsection}
 
 \begin{subsection}{ Question }
 \par
-3. 由于breakpoint的陷阱是可以面向用户态的进程的，因此需要将IDT的特权位置1，允许用户态进程使用。如果不设置则用户无法使用断点中断。
+3. 由于breakpoint的陷阱是可以面向用户态的进程的，因此需要将IDT的特权位置设3，允许用户态进程使用。如果不设置则用户无法使用断点中断，当int 3的时候就会因为权限不足造成general protection fault。
 \par
-4. 
+4. 这种机制有效限制了用户可以使用所有的中断而造成的问题，因此可以通过设置IDT的特权位来控制用户的中断操作。
+\end{subsection}
+
+\begin{subsection}{ Exercise 7 }
+\par
+系统调用的系统调用号会存在寄存器\%eax上，而接下来5个参数会存放在\%edx, \%ecx, \%ebx, \%edi, \%esi中，当系统调用结束后，其返回值会保存在寄存器\%eax上。
+\par
+lib/syscall.c中是用户调用系统调用的接口，里面也显示了不同系统调用的参数存放的位置，通过这个我们再根据系统调用号分开处理好系统调用即可。
+\par
+需要更改的地方有：
+\par
+(1)增加系统调用中断入口程序和将其地址加入IDT表中，注意特权位置要置为3，因为系统调用是提供给用户态进程使用的 
+\par
+(2)在中断的trap\_dispatch()中增加T\_SYSTEM的分配
+(3)实现根据system call号来分发给不同的执行程序。
+\begin{lstlisting}[language=C]
+// trapentry.S:
+    TRAPHANDLER_NOEC(vec48, T_SYSCALL)
+
+// trap.c/trap_init
+    void vec48();
+    SETGATE(idt[48], 0, GD_KT, vec48, 3);    
+    
+// trap.c/trap_dispatch:
+    switch (tf->tf_trapno) {
+        case T_PGFLT:
+        	if (tf->tf_cs == GD_KT)
+        		panic("page fault in kernel");
+        	else
+        		page_fault_handler(tf);
+            break;
+        case T_BRKPT:
+            monitor(tf); 
+            break;
+        case T_SYSCALL:
+            r = syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx,
+                        tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
+            if (r < 0)
+                panic("trap.c/syscall : %e\n", r);
+            else
+                tf->tf_regs.reg_eax = r;
+            break;
+        ...
+    }
+    
+// syscall.c/syscall
+// Dispatches to the correct kernel function, passing the arguments.
+int32_t
+syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
+{
+	// Call the function corresponding to the 'syscallno' parameter.
+	// Return any appropriate return value.
+	// LAB 3: Your code here.
+    
+    switch (syscallno) {
+        case SYS_cputs:
+            sys_cputs((char *)a1, (size_t)a2);
+            return 0;
+            break;
+        case SYS_cgetc:
+            return sys_cgetc();
+            return 0;
+            break;
+        case SYS_getenvid:
+            return sys_getenvid();
+            break;
+        case SYS_env_destroy:
+            return sys_env_destroy(a1);
+            break;
+        dafult:
+            return -E_INVAL;
+	}
+    panic("syscall not implemented");
+}
+\end{lstlisting}
+
+\end{subsection}
+
+\begin{subsection}{ Challenge 3 }
+
+\end{subsection}
+
+\begin{subsection}{ Exercise 8 }
+\par
+lib/entry.S是为创建的进程的入口，之后会跳转到libmain，之后会跳到相应的进程。在libmain需要记录该进程的环境。
+\par
+而我们有sys\_getenvid返回当前进程的envid号，ENVX(eid)可以得知其在envs的下标，这样就可以得到thisenv了。
+\begin{lstlisting}[language=C]
+	// set thisenv to point at our Env structure in envs[].
+	// LAB 3: Your code here.
+	thisenv = envs + ENVX(sys_getenvid());
+\end{lstlisting}
+
+\end{subsection}
+
+\begin{subsection}{ Exercise 9 }
+\par
+如果在kernel下发生了page fault则说明这是一个bug，因此需要panic掉。思索一下加入kernel下发生page fault，而不panic会发生什么？
+\par
+因此需要在发生page fault的时候判断一下是用户态还是内核态下产生的page fault。
+\par
+\begin{lstlisting}[language=C]
+// in trap.c/page_fault_handler
+
+	// LAB 3: Your code here.
+	if (tf->tf_cs == GD_KT)
+    	panic("page_fault_handler : page fault in kernel\n");
+\end{lstlisting}
+
+\par
+用户可能会通过中断访问不属于其空间的地址，例如printf一个内核的地址，或者创建超过字符串定义大小的内容等等。如果用户进程进行了这些操作，则直接杀掉它。
+\par
+填写检测所访问的虚拟地址是否在其内存空间内。
+\begin{lstlisting}[language=C]
+int
+user_mem_check(struct Env *env, const void *va, size_t len, int perm)
+{
+	// LAB 3: Your code here.
+	if (len == 0) return 0;		
+
+	perm |= PTE_P;
+	pte_t * pte;
+	uint32_t va_now = (uint32_t)va;
+	uint32_t va_last = ROUNDUP((uint32_t)va + len, PGSIZE);
+	for (; ROUNDDOWN(va_now, PGSIZE) != va_last; va_now = ROUNDDOWN(va_now + PGSIZE, PGSIZE)) {
+		if (va_now >= ULIM) {
+			user_mem_check_addr = va_now;
+			return -E_FAULT;
+		}
+		pte = pgdir_walk(env->env_pgdir, (void *)va_now, false);
+		if (pte == NULL || ((*pte & perm ) != perm)) {
+			user_mem_check_addr = va_now;
+			return -E_FAULT;
+		}
+	}
+	return 0;
+}
+\end{lstlisting}
+\par
+在sys\_cputs中加入：
+\begin{lstlisting}[language=C]
+	// LAB 3: Your code here.
+    user_mem_assert(curenv, (void *)s, len, PTE_U);
+\end{lstlisting}
+
+\par
+在kern/kdebug.c加入对usd, stabs, stabstr的检查。
+\begin{lstlisting}[language=C]
+		// Make sure this memory is valid.
+		// Return -1 if it is not.  Hint: Call user_mem_check.
+		// LAB 3: Your code here.
+		if (user_mem_check(curenv, (void *)usd, sizeof(struct UserStabData), PTE_U) < 0) {
+			return -1;
+		}
+
+		stabs = usd->stabs;
+		stab_end = usd->stab_end;
+		stabstr = usd->stabstr;
+		stabstr_end = usd->stabstr_end;
+
+		// Make sure the STABS and string table memory is valid.
+		// LAB 3: Your code here.
+		if (user_mem_check(curenv, (void *)stabs, (uint32_t)stab_end - (uint32_t)stabs, PTE_U) < 0) {
+			return -1;
+		}
+		if (user_mem_check(curenv, (void *)stabstr, (uint32_t)stabstr_end - (uint32_t)stabstr, PTE_U) < 0) {
+			return -1;
+		}
+\end{lstlisting}
+\par
+make run-breakpoint，backtrace，造成了page fault，具体如下图：
+\par
+\includegraphics[scale=0.5]{backtrace.png}
+\par
+产生page fault的原因是其尝试访问了0xebfdfd0的位置读取上一个ebp，这个位置不在内核栈上，因此产生了page fault。
+\par
+为什么是0xebfdfd0呢？从env.c中的env\_alloc可知，初始设置栈为esp = USTACKTOP，这个位置是用户进程的栈空间的位置，这一段在内核中是没有映射的，所以当运行进程时，ebp保留的是用户进程的栈空间，因此当kernel尝试访问的时候就会造成page fault。	
+\end{subsection}
+
+\begin{subsection}{ Exercise 10 }
+\par
+似乎什么都没写就直接通过了。。通过看evilhello的其内核段写数据，我们确实在上面已经处理过了这种非法访问了。
 \end{subsection}
 
 

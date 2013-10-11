@@ -35,6 +35,11 @@ static __inline uint32_t read_esp(void) __attribute__((always_inline));
 static __inline void cpuid(uint32_t info, uint32_t *eaxp, uint32_t *ebxp, uint32_t *ecxp, uint32_t *edxp);
 static __inline uint64_t read_tsc(void) __attribute__((always_inline));
 
+#define wrmsr(msr, val1, val2) \
+	__asm__ __volatile__("wrmsr" \
+	: /* no outputs */ \
+	: "c" (msr), "a" (val1), "d" (val2))
+
 static __inline void
 breakpoint(void)
 {
@@ -292,5 +297,6 @@ xchg(volatile uint32_t *addr, uint32_t newval)
 			"cc");
 	return result;
 }
+
 
 #endif /* !JOS_INC_X86_H */

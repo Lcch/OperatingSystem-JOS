@@ -478,7 +478,7 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 }
 \end{lstlisting}
 \par
-但是，竟然运行Triple fault，调了很久似乎没有发现错误，后来才发现我忘记设置开关了。
+但是，竟然运行Triple fault，调了很久似乎没有发现错误，后来在马林同学的提醒才发现我忘记设置开关了。
 \par
 在cr4中的bit 4是Page Size Extension位，表示可以启用4M的大页寻址。因此在导入新的页目录前将cr4开启Page Size Extension就可以了。即：
 \begin{lstlisting}[language=C]
@@ -663,7 +663,7 @@ mon_dump(int argc, char **argv, struct Trapframe *tf)
 \includegraphics[scale=0.5]{dump.png}
 \end{subsubsection}
 
-\begin{subsubsection}{ my tool fun }
+\begin{subsubsection}{ my tool for debug }
 \par
 我写了一个查看page directory项的函数
 \begin{lstlisting}[language=C]
@@ -729,6 +729,14 @@ mon_kernelpd(int argc, char **argv, struct Trapframe *tf)
 \end{subsection}
 
 \end{section}
+
+\begin{section}{ Summary }
+\par
+这个Lab我估计一共花了将近30个小时，很多地方都是自己突然想不清对应关系导致的，特别是什么区别合适使用物理内存，虚拟内存的时候。通过这个Lab我也深刻理解了操作系统中的页寻址到底是什么回事，其背后的实现。
+\par
+最后感谢马林同学在我challenge 1中一直不知道哪里错的时候提醒我是不是没设cr4的开关。还有感谢毛景树同学提供给我的Latex的模板！
+\end{section}
+
 
 \end{document}
 

@@ -27,13 +27,15 @@
 \contentsline {subsubsection}{\numberline {3.2.4}Q5}{11}{subsubsection.3.2.4}
 \contentsline {subsubsection}{\numberline {3.2.5}Q6}{11}{subsubsection.3.2.5}
 \contentsline {subsection}{\numberline {3.3}Challenge 1:}{11}{subsection.3.3}
+\contentsline {paragraph}{•}{14}{section*.2}
 \contentsline {subsection}{\numberline {3.4}Challenge 2:}{14}{subsection.3.4}
 \contentsline {subsubsection}{\numberline {3.4.1} ShowMappings }{14}{subsubsection.3.4.1}
 \contentsline {subsubsection}{\numberline {3.4.2} SetPermission }{15}{subsubsection.3.4.2}
 \contentsline {subsubsection}{\numberline {3.4.3} Dump }{16}{subsubsection.3.4.3}
-\contentsline {subsubsection}{\numberline {3.4.4} my tool fun }{17}{subsubsection.3.4.4}
+\contentsline {subsubsection}{\numberline {3.4.4} my tool for debug }{17}{subsubsection.3.4.4}
 \contentsline {subsection}{\numberline {3.5}Challenge 3:}{18}{subsection.3.5}
 \contentsline {subsection}{\numberline {3.6}Challenge 4:}{18}{subsection.3.6}
 \contentsline {section}{\numberline {4} Something Interesting... }{19}{section.4}
 \contentsline {subsection}{\numberline {4.1} Mem }{19}{subsection.4.1}
 \contentsline {subsection}{\numberline {4.2} Self-Reference in Page Directory }{19}{subsection.4.2}
+\contentsline {section}{\numberline {5} Summary }{19}{section.5}

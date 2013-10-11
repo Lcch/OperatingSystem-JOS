@@ -14,7 +14,9 @@ env_setup_vm in
 env_setup_vm out
 [00000000] new env 00001000
 Incoming TRAP frame at 0xefffffbc
+TRAP NUM : 48
 Incoming TRAP frame at 0xefffffbc
+TRAP NUM : 48
 [00001000] user_mem_check assertion failure for va f010000c
 [00001000] free env 00001000
 Destroyed the only environment - nothing more to do!

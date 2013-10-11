@@ -290,14 +290,16 @@ region_alloc(struct Env *e, void *va, size_t len)
     uint32_t addr = (uint32_t)ROUNDDOWN(va, PGSIZE);
     uint32_t end  = (uint32_t)ROUNDUP(va + len, PGSIZE);
     struct PageInfo *pg;
+    int r;
     // cprintf("region_alloc: %u %u\n", addr, end);
     for ( ; addr != end; addr += PGSIZE) {
         pg = page_alloc(1);
         if (pg == NULL) {
             panic("region_alloc : can't alloc page\n");
         } else {
-            if (page_insert(e->env_pgdir, pg, (void *)addr, PTE_U | PTE_W) != 0) {
-                panic("region_alloc : page_insert fail\n");
+            r = page_insert(e->env_pgdir, pg, (void *)addr, PTE_U | PTE_W);
+            if (r != 0) {
+                panic("/kern/env.c/region_alloc : %e\n", r);
             }
         }
     }

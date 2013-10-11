@@ -7,6 +7,7 @@
 #include <inc/assert.h>
 #include <inc/x86.h>
 
+#include <kern/env.h>
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
@@ -31,7 +32,9 @@ static struct Command commands[] = {
     { "setcolor", "Change the console color", mon_setcolor },
     { "showmappings", "Show virtual addresses mappings", mon_showmappings },
     { "setpermission", "set permission", mon_setpermission },
-    { "dump", "dump contents in memory", mon_dump }
+    { "dump", "dump contents in memory", mon_dump },
+    { "continue", "continue in breakpoint", mon_continue},
+    { "si", "single-step in breakpoint", mon_si}
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -257,6 +260,36 @@ mon_showmappings(int argc, char **argv, struct Trapframe *tf)
 
 #define WHITESPACE "\t\r\n "
 #define MAXARGS 16
+
+int 
+mon_continue(int argc, char **argv, struct Trapframe *tf)
+{
+    if (tf == NULL) {
+        cprintf("Error: you only can use continue in breakpoint.\n");
+        return -1;
+    }
+    tf->tf_eflags &= (~FL_TF);
+    env_run(curenv);    // usually it won't return;
+    panic("mon_continue : env_run return");
+    return 0;
+}
+
+int 
+mon_si(int argc, char **argv, struct Trapframe *tf)
+{
+    if (tf == NULL) {
+        cprintf("Error: you only can use si in breakpoint.\n");
+        return -1;
+    }
+
+    // next step also cause debug interrupt
+    tf->tf_eflags |= FL_TF;
+
+    cprintf("tfno: %u\n", tf->tf_trapno);
+    env_run(curenv);
+    panic("mon_si : env_run return");
+    return 0;
+}
 
 static int
 runcmd(char *buf, struct Trapframe *tf)
