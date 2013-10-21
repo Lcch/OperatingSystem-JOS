@@ -50,6 +50,8 @@ seta20.2:
   orl     $CR0_PE_ON, %eax
   movl    %eax, %cr0
   
+  movw    $10, %ax
+
   # Jump to next instruction, but in 32-bit code segment.
   # Switches processor into 32-bit mode.
   ljmp    $PROT_MODE_CSEG, $protcseg
@@ -75,7 +77,7 @@ spin:
 # Bootstrap GDT
 .p2align 2                                # force 4 byte alignment
 gdt:
-  SEG_NULL				# null seg
+  SEG(0x0, 0x10, 0xffff)				# null seg
   SEG(STA_X|STA_R, 0x0, 0xffffffff)	# code seg
   SEG(STA_W, 0x0, 0xffffffff)	        # data seg
 

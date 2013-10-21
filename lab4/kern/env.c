@@ -192,13 +192,9 @@ env_setup_vm(struct Env *e)
 	//    - The functions in kern/pmap.h are handy.
 
 	// LAB 3: Your code here.
-    cprintf("env_setup_vm in\n");
-
     p->pp_ref++;
     e->env_pgdir = (pde_t *)page2kva(p);
-    // pay attention: have we set mapped in kern_pgdir ?
-    // page_insert(kern_pgdir, p, (void *)e->env_pgdir, PTE_U | PTE_W); 
-
+    
     memcpy(e->env_pgdir, kern_pgdir, PGSIZE);
     memset(e->env_pgdir, 0, PDX(UTOP) * sizeof(pde_t));
 
@@ -206,7 +202,6 @@ env_setup_vm(struct Env *e)
 	// Permissions: kernel R, user R
 	e->env_pgdir[PDX(UVPT)] = PADDR(e->env_pgdir) | PTE_P | PTE_U;
 
-    cprintf("env_setup_vm out\n");
 	return 0;
 }
 
@@ -552,7 +547,7 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-
+	// cprintf("I am in env_run\n");
     if (curenv != NULL) {
         // context switch
         if (curenv->env_status == ENV_RUNNING) {
@@ -564,9 +559,8 @@ env_run(struct Env *e)
     curenv->env_status = ENV_RUNNING;
     curenv->env_runs++;
     
-    // may have some problem, because lcr3(x), x should be physical address
     lcr3(PADDR(curenv->env_pgdir));
-
+    unlock_kernel();
     env_pop_tf(&curenv->env_tf);    
 	panic("env_run not yet implemented");
 }

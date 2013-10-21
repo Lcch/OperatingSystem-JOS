@@ -510,7 +510,7 @@ mon_showmappings(int argc, char **argv, struct Trapframe *tf)
         if (laddr > haddr) {
             haddr ^= laddr;
             laddr ^= haddr;
-            haddr ^= haddr;
+            haddr ^= laddr;
         }
         laddr = ROUNDDOWN(laddr, PGSIZE);
         haddr = ROUNDUP(haddr, PGSIZE);

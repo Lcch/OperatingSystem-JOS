@@ -29,6 +29,21 @@ sched_yield(void)
 	// below to halt the cpu.
 
 	// LAB 4: Your code here.
+	int now_env, i;
+	if (curenv) {			// thiscpu->cpu_env
+		now_env = (ENVX(curenv->env_id) + 1) % NENV;
+	} else {
+		now_env = 0;
+	}
+	for (i = 0; i < NENV; i++, now_env = (now_env + 1) % NENV) {
+		if (envs[now_env].env_status == ENV_RUNNABLE) {
+			//cprintf("I am CPU %d , I am in sched yield, I find ENV %d\n", thiscpu->cpu_id, now_env);
+			env_run(&envs[now_env]);
+		}
+	}
+	if (curenv && curenv->env_status == ENV_RUNNING) {
+		env_run(curenv);
+	}
 
 	// sched_halt never returns
 	sched_halt();
@@ -41,14 +56,26 @@ void
 sched_halt(void)
 {
 	int i;
-
 	// For debugging and testing purposes, if there are no runnable
 	// environments in the system, then drop into the kernel monitor.
+	
+	/*
+	for (i = 0; i < NENV; i++) {
+		if ((envs[i].env_status == ENV_RUNNABLE ||
+		     envs[i].env_status == ENV_RUNNING)) {
+			cprintf("CPU %d : %d env is ", thiscpu->cpu_id, i);
+			if (envs[i].env_status == ENV_RUNNABLE) cprintf("ENV_RUNNABLE\n");
+			else cprintf("ENV_RUNNING\n");
+		}
+	}
+	*/
+
 	for (i = 0; i < NENV; i++) {
 		if ((envs[i].env_status == ENV_RUNNABLE ||
 		     envs[i].env_status == ENV_RUNNING))
 			break;
 	}
+	
 	if (i == NENV) {
 		cprintf("No runnable environments in the system!\n");
 		while (1)
@@ -65,8 +92,9 @@ sched_halt(void)
 	xchg(&thiscpu->cpu_status, CPU_HALTED);
 
 	// Release the big kernel lock as if we were "leaving" the kernel
+	
 	unlock_kernel();
-
+	
 	// Reset stack pointer, enable interrupts and then halt.
 	asm volatile (
 		"movl $0, %%ebp\n"

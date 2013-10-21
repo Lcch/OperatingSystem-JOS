@@ -1,0 +1,380 @@
+\documentclass[GBK,winfonts,a4paper,10pt]{ctexart}
+\usepackage{fancyhdr}
+\usepackage{indentfirst}
+\usepackage{graphics}
+\usepackage{enumerate}
+\usepackage{framed}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{mdwlist}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{marvosym,listings,etoolbox}
+\usepackage{geometry}
+
+\lstset{numbers=left, numberstyle=\small, keywordstyle=\color{blue!70}, commentstyle=\color{red!50!green!50!blue!50}, frame=shadowbox, rulesepcolor=\color{red!20!green!20!blue!20},escapeinside=``, xleftmargin=2em,xrightmargin=2em, aboveskip=1em, literate={@}{\MVAt}1}
+
+\patchcmd{\verb}{\dospecials}{\dospecials\atspecial}{}{}
+\def\atspecial{\begingroup\lccode`~=`@
+  \lowercase{\endgroup\let~}\MVAt
+  \catcode`@=\active}
+  
+
+
+\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}%
+       
+\lstdefinestyle{customc}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  frame=single,
+  xleftmargin=\parindent,
+  language=C,
+  showstringspaces=false,
+  basicstyle=\fontsize{8pt}{8pt}\ttfamily,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  identifierstyle=\color{blue},
+  stringstyle=\color{orange},
+  tabsize=4,
+  numbers=none,
+  mathescape=false,
+}
+
+\lstset{escapechar=@,style=customc}
+
+\pagestyle{fancy}
+\hypersetup{pdfborder=0 0 0}
+
+\usepackage{clrscode}
+
+\usepackage{latexsym}
+
+\begin{document}
+
+\rhead{}
+\lhead{}
+\cfoot{\thepage}
+\renewcommand{\footrulewidth}{0.4pt}
+%\renewcommand{\thesection}{}
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+\setlength{\tabcolsep}{2pt}
+
+\setlength{\parindent}{2em}
+
+\thispagestyle{fancy}
+
+
+\title{Operating System MIT 6.828 JOS Lab4 Report}
+\author{Computer Science \\ ChenHao(1100012776) }
+\date{\today}
+\maketitle
+
+\thispagestyle{fancy}
+
+\tableofcontents
+
+\newpage
+
+\begin{section}{Part A: Multiprocessor Support and Cooperative Multitasking}
+\begin{subsection}{Exercise 1}
+\par
+这是是要我们实现一个用于简单分配内存空间进行映射的函数，利用以前写的boot\_map\_region就可以很容易的实现。
+\begin{lstlisting}[language=C]
+void *
+mmio_map_region(physaddr_t pa, size_t size)
+{
+	static uintptr_t base = MMIOBASE;
+
+	pa = ROUNDDOWN(pa, PGSIZE);
+	boot_map_region(kern_pgdir, base, ROUNDUP(size, PGSIZE), pa, PTE_PCD | PTE_PWT | PTE_W);
+	uintptr_t tmp_base = base;
+	base += ROUNDUP(size, PGSIZE);
+	return (void *) tmp_base;
+}
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{Exercise 2}
+\par
+这一段是在说明AP是如何启动的，BSP在启动APs前，会先收集CPU信息，APIC IDs, LAPIC的MMIO地址等信息，然后执行boot\_aps，在这段中BSP依次让每个AP启动执行mpentry.S中的代码（BSP将代码复制至内存中MPENTRY\_ADDRESS的位置，并将每个的AP的CS:IP设置好），通过发送STARTUP IPI两次来启动AP（在lapic\_startup函数中说明了，这个启动方式是硬件支持的）之后AP就执行启动程序，等执行完后会给BSP发送CPU\_STARTED的信号。表示结束，BSP在APs的启动过程中一直处于空循环的状态。
+\par
+因此MPENTRY\_ADDRESS所在的内存地址是不能够被用于分配其它代码或者数据的，因此在page\_init的需要进行修改。
+\begin{lstlisting}[language=C]
+void
+page_init(void)
+{
+    page_free_list = NULL;
+    size_t i;
+	size_t nf_lb = IOPHYSMEM / PGSIZE;
+    size_t nf_ub = PADDR(boot_alloc(0)) / PGSIZE;
+    size_t mpentry_page = MPENTRY_PADDR / PGSIZE;
+    for (i = 0; i < npages; i++) {
+        if (i != 0 && (i < nf_lb || i >= nf_ub) && i != mpentry_page) {
+		    pages[i].pp_ref = 0;
+            pages[i].pp_link = page_free_list;
+		    page_free_list = &pages[i];
+        } else {
+            pages[i].pp_ref = 1;
+            pages[i].pp_link = NULL;
+        }
+	}
+}
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{Question 1}
+\par
+kern/mpentry.S的链接地址在KERNBASE以上，而AP在是在实模式下无法使用页寻址，因此我们需要手动地计算出其所在的物理地址。如果注释了这句，则会产生缺页异常。
+\end{subsection}
+
+\begin{subsection}{Exercise 3}
+\par
+问题：为什么给kern\_pgdir即可，不用每个cpu的pgdir都赋予值？
+\begin{lstlisting}[language=C]
+static void
+mem_init_mp(void)
+{    
+    int cpu_id;
+    for (cpu_id = 0; cpu_id < NCPU; cpu_id++) {
+        boot_map_region(kern_pgdir,
+                        KSTACKTOP - cpu_id * (KSTKSIZE + KSTKGAP) - KSTKSIZE,
+                        KSTKSIZE,
+                        PADDR(percpu_kstacks[cpu_id]),
+                        PTE_W);
+    }
+}
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{Exercise 4}
+\par
+根据cpu\_id放置在对应的位置即可。
+\begin{lstlisting}[language=C]
+void
+trap_init_percpu(void)
+{
+	// LAB 4: Your code here:
+    int cpu_id = thiscpu->cpu_id;
+    thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - cpu_id * (KSTKSIZE + KSTKGAP);
+    thiscpu->cpu_ts.ts_ss0 = GD_KD;
+
+    gdt[(GD_TSS0 >> 3) + cpu_id] = SEG16(STS_T32A, (uint32_t) (&(thiscpu->cpu_ts)),
+    							sizeof(struct Taskstate), 0);
+    gdt[(GD_TSS0 >> 3) + cpu_id].sd_s = 0;
+
+    ltr(GD_TSS0 + (cpu_id << 3));
+
+    lidt(&idt_pd);
+}
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{Exercise 5}
+\par
+根据题目要求在对应的地方放上lock或者unlock即可，连位置都有注释提示，非常简单。
+\end{subsection}
+
+\begin{subsection}{Question 2}
+\par
+共享内核栈是会存在问题的，在发生中断的时候，对于现场保护的是发生在big kernel lock之前的，因此当共享内核栈很可能会产生参数的混乱。
+\end{subsection}
+
+\begin{subsection}{Exercise 6}
+\par
+这一部分要我们实现Round-Robin Scheduling，即类似循环链表，每次从刚执行的env之后选择最近的一个RUNNABLE的进行执行。代码如下：
+\begin{lstlisting}[language=C]
+void
+sched_yield(void)
+{
+	struct Env *idle;
+
+	// LAB 4: Your code here.
+	int now_env, i;
+	if (curenv) {			// thiscpu->cpu_env
+		now_env = (ENVX(curenv->env_id) + 1) % NENV;
+	} else {
+		now_env = 0;
+	}
+	for (i = 0; i < NENV; i++, now_env = (now_env + 1) % NENV) {
+		if (envs[now_env].env_status == ENV_RUNNABLE) {
+			//cprintf("I am CPU %d , I am in sched yield, I find ENV %d\n", thiscpu->cpu_id, now_env);
+			env_run(&envs[now_env]);
+		}
+	}
+	if (curenv && curenv->env_status == ENV_RUNNING) {
+		env_run(curenv);
+	}
+	// sched_halt never returns
+	sched_halt();
+}
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{Question 3-4}
+\par
+Question 3: 由于Env在mem\_init中分配了内存进行存储并建立了映射，而这个映射在每个CPU上都是一致的，因此lcr3()后对于Env的还是存在虚拟内存到物理内存的映射的。
+\par
+Question 4: 保存现场是为了之后CPU进行继续处理这个environment的时候保证不会造成错误，
+\end{subsection}
+
+
+\begin{subsection}{Question 7}
+\begin{subsubsection}{sys\_exofork}
+\par
+这个部分是生成一个新的environment，使得其寄存器的值与当前的environment的一样，对于新的environment返回值为0（\%eax=0)。对于该函数返回新的environment的pid号。
+\begin{lstlisting}[language=C]
+static envid_t
+sys_exofork(void)
+{
+	struct Env * new_env;
+	int r = env_alloc(&new_env, curenv->env_id);
+	if (r < 0) return r;
+	
+	new_env->env_status = ENV_NOT_RUNNABLE;
+	memcpy((void *)(&new_env->env_tf), (void*)(&curenv->env_tf), sizeof(struct Trapframe));
+	
+	// for children environment, return 0
+	new_env->env_tf.tf_regs.reg_eax = 0;
+
+	return new_env->env_id;
+}
+\end{lstlisting}
+\end{subsubsection}
+
+\begin{subsubsection}{sys\_env\_set\_status}
+\par
+这个是设置environment的status，按照注释做即可。
+\begin{lstlisting}[language=C]
+static int
+sys_env_set_status(envid_t envid, int status)
+{
+	if (status != ENV_RUNNABLE && status != ENV_NOT_RUNNABLE) 
+		return -E_INVAL;
+
+	struct Env * env;
+	int r = envid2env(envid, &env, 1);
+	if (r < 0) return r;
+	env->env_status = status;
+	return 0;
+}
+\end{lstlisting}
+\end{subsubsection}
+
+\begin{subsubsection}{sys\_page\_alloc}
+\par
+这个函数是为environment创建虚拟地址va的映射页，按照注释一条一条做即可。注意如何无法建立映射，则新分配的页需要释放掉。
+\begin{lstlisting}[language=C]
+static int
+sys_page_alloc(envid_t envid, void *va, int perm)
+{
+	struct Env * env;
+	int r = envid2env(envid, &env, 1);
+	if (r < 0) return -E_BAD_ENV;
+
+	if ((uint32_t)va >= UTOP || ROUNDUP(va, PGSIZE) != va) return -E_INVAL;
+	
+	if (!((perm & PTE_U) && (perm & PTE_P) && (perm & (~PTE_SYSCALL))==0)) return -E_INVAL;
+
+	struct PageInfo * pg = page_alloc(ALLOC_ZERO);
+	if (pg == NULL) return -E_NO_MEM;
+	if (page_insert(env->env_pgdir, pg, va, perm) < 0) {
+		// page_insert fails, should free the page you allocated!  
+		page_free(pg);
+		return -E_NO_MEM;
+	}
+	return 0;
+}
+\end{lstlisting}
+\end{subsubsection}
+
+\begin{subsubsection}{sys\_page\_map}
+\par
+按照给定的进程，和虚拟地址，拷贝其映射至另一个进程的给定的虚拟地址上，按照注释一条一条做即可。
+\begin{lstlisting}[language=C]
+static int
+sys_page_map(envid_t srcenvid, void *srcva,
+	     envid_t dstenvid, void *dstva, int perm)
+{
+	struct Env * dstenv, * srcenv;
+	int r = envid2env(dstenvid, &dstenv, 1);
+	if (r < 0) return -E_BAD_ENV;
+	r = envid2env(srcenvid, &srcenv, 1);
+	if (r < 0) return -E_BAD_ENV;
+
+	if ((uint32_t)srcva >= UTOP || ROUNDUP(srcva, PGSIZE) != srcva) return -E_INVAL;
+	if ((uint32_t)dstva >= UTOP || ROUNDUP(dstva, PGSIZE) != dstva) return -E_INVAL;
+
+
+	// struct PageInfo * page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
+	struct PageInfo * pg;
+	pte_t * pte;
+	pg = page_lookup(srcenv->env_pgdir, srcva, &pte);
+	if (pg == NULL) return -E_INVAL;		
+
+	if (!((perm & PTE_U) && (perm & PTE_P) && (perm & (~PTE_SYSCALL))==0)) return -E_INVAL;
+	
+	if ((perm & PTE_W) && ((*pte) & PTE_W) == 0) return -E_INVAL;
+
+	// int page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
+	if (page_insert(dstenv->env_pgdir, pg, dstva, perm) < 0) return -E_NO_MEM;
+
+	return 0;
+}
+\end{lstlisting}
+\end{subsubsection}
+
+\begin{subsubsection}{sys\_page\_unmap}
+\par
+按照注释一条一条做即可。
+\begin{lstlisting}[language=C]
+static int
+sys_page_unmap(envid_t envid, void *va)
+{
+	struct Env * env;
+	int r = envid2env(envid, &env, 1);
+	if (r < 0) return -E_BAD_ENV;
+
+	if ((uint32_t)va >= UTOP || ROUNDUP(va, PGSIZE) != va) return -E_INVAL;
+	
+	// void page_remove(pde_t *pgdir, void *va)
+	page_remove(env->env_pgdir, va);
+
+	return 0;
+}
+\end{lstlisting}	
+\end{subsubsection}
+
+\par
+注意到目前写的调度都是执行完一个environment之后就结束，剩余最后一个作为monitor，其余的CPU均HLT住，但是注意不能把所有CPU都HLT，这样会出现中断13。当我尝试在init.c中设置environment的数量大于CPU核的数量的时候，就会造成中断13，因为所有的CPU都HLT了。我在这里调试了很久，花了很长时间，最后才发现竟然是没考虑清楚。
+\end{subsection}
+
+\end{section}
+
+\begin{section}{Part B: Copy-on-Write Fork}
+\end{section}
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

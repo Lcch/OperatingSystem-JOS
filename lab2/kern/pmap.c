@@ -117,7 +117,7 @@ boot_alloc(uint32_t n)
 void
 mem_init(void)
 {
-	uint32_t cr0;
+	uint32_t cr0, cr4;
 	size_t n;
 
 	// Find out how much memory the machine has (npages & npages_basemem).
@@ -146,6 +146,7 @@ mem_init(void)
 	// each physical page, there is a corresponding struct PageInfo in this
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
+    cprintf("P %u\n", npages);
     pages = (struct PageInfo *) boot_alloc(npages * sizeof(struct PageInfo));
 
 	//////////////////////////////////////////////////////////////////////
@@ -223,7 +224,10 @@ mem_init(void)
 	//
 	// If the machine reboots at this point, you've probably set up your
 	// kern_pgdir wrong.
-	lcr4(CR4_PSE);					// Open Size Page Extension
+    
+    cr4 = rcr4();
+    cr4 |= CR4_PSE;
+	lcr4(cr4);					// Open Size Page Extension
 	lcr3(PADDR(kern_pgdir));
 
 	check_page_free_list(0);
@@ -275,6 +279,7 @@ page_init(void)
     size_t i;
 	size_t nf_lb = IOPHYSMEM / PGSIZE;
     size_t nf_ub = PADDR(boot_alloc(0)) / PGSIZE;
+    cprintf("BOOT_ALLOC_0: %u\n", nf_ub);
     for (i = 0; i < npages; i++) {
         if (i != 0 && (i < nf_lb || i >= nf_ub)) {
 		    pages[i].pp_ref = 0;

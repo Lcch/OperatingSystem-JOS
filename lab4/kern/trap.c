@@ -71,49 +71,7 @@ trap_init(void)
 {
 	extern struct Segdesc gdt[];
 
-	// LAB 3: Your code here.
-	/*
-	void vec0();
-	void vec1();
-	void vec2();
-	void vec3();
-	void vec4();
-	void vec6();
-	void vec7();
-	void vec8();
-	void vec10();
-	void vec11();
-	void vec12();
-	void vec13();
-	void vec14();
-	void vec16();	
-	void vec17();
-	void vec18();
-	void vec19();
-    void vec48();
-
-	SETGATE(idt[0], 0, GD_KT, vec0, 0);
-	SETGATE(idt[1], 0, GD_KT, vec1, 0);
-	SETGATE(idt[2], 0, GD_KT, vec2, 0);
-	SETGATE(idt[3], 0, GD_KT, vec3, 3);     // software interrupt 
-	SETGATE(idt[4], 0, GD_KT, vec4, 0);
-
-	SETGATE(idt[6], 0, GD_KT, vec6, 0);
-	SETGATE(idt[7], 0, GD_KT, vec7, 0);
-	SETGATE(idt[8], 0, GD_KT, vec8, 0);
-	SETGATE(idt[10], 0, GD_KT, vec10, 0);
-	SETGATE(idt[11], 0, GD_KT, vec11, 0);
-	SETGATE(idt[12], 0, GD_KT, vec12, 0);
-	SETGATE(idt[13], 0, GD_KT, vec13, 0);
-	SETGATE(idt[14], 0, GD_KT, vec14, 0);
-
-	SETGATE(idt[16], 0, GD_KT, vec16, 0);
-	SETGATE(idt[17], 0, GD_KT, vec17, 0);
-	SETGATE(idt[18], 0, GD_KT, vec18, 0);
-	SETGATE(idt[19], 0, GD_KT, vec19, 0);
-    SETGATE(idt[48], 0, GD_KT, vec48, 3);
-    */
-    
+	// LAB 3: Your code here.  
     extern uint32_t vectors[];
     extern void vec48();
     int i;
@@ -156,23 +114,26 @@ trap_init_percpu(void)
 	// user space on that CPU.
 	//
 	// LAB 4: Your code here:
-
-	// Setup a TSS so that we get the right stack
+    
+    int cpu_id = thiscpu->cpu_id;
+    
+    // Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
-	ts.ts_esp0 = KSTACKTOP;
-	ts.ts_ss0 = GD_KD;
+    thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - cpu_id * (KSTKSIZE + KSTKGAP);
+    thiscpu->cpu_ts.ts_ss0 = GD_KD;
 
-	// Initialize the TSS slot of the gdt.
-	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t) (&ts),
-					sizeof(struct Taskstate), 0);
-	gdt[GD_TSS0 >> 3].sd_s = 0;
+    gdt[(GD_TSS0 >> 3) + cpu_id] = SEG16(STS_T32A, (uint32_t) (&(thiscpu->cpu_ts)),
+    							sizeof(struct Taskstate), 0);
 
-	// Load the TSS selector (like other segment selectors, the
+    // Initialize the TSS slot of the gdt.
+    gdt[(GD_TSS0 >> 3) + cpu_id].sd_s = 0;
+
+    // Load the TSS selector (like other segment selectors, the
 	// bottom three bits are special; we leave them 0)
-	ltr(GD_TSS0);
+    ltr(GD_TSS0 + (cpu_id << 3));
 
-	// Load the IDT
-	lidt(&idt_pd);
+    // Load the IDT
+    lidt(&idt_pd);
 }
 
 void
@@ -225,40 +186,31 @@ static void
 trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
-	// LAB 3: Your code here.	
-    cprintf("TRAP NUM : %u\n", tf->tf_trapno);
-
+	// LAB 3: Your code here.
+    cprintf("CPU %d, TRAP NUM : %u\n", cpunum(), tf->tf_trapno);
     int r;
-    // cprintf("TRAPNO : %d\n", tf->tf_trapno);
-    switch (tf->tf_trapno) {
-    	case T_DEBUG:
-    		monitor(tf);
-    		break;
-        case T_PGFLT:
-        	page_fault_handler(tf);
-            break;
-        case T_BRKPT:
-            monitor(tf); 
-            break;
-        case T_SYSCALL:
-            r = syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx,
-                        tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
-            if (r < 0)
-                panic("trap.c/syscall : %e\n", r);
-            else
-                tf->tf_regs.reg_eax = r;
-            break;
-        default:
-	        // Unexpected trap: The user process or the kernel has a bug.
-	        print_trapframe(tf);
-	        if (tf->tf_cs == GD_KT)
-		        panic("unhandled trap in kernel");
-	        else {
-		        env_destroy(curenv);
-		        return;
-	        }
-    }
 
+	if (tf->tf_trapno == T_DEBUG) {
+		monitor(tf);
+		return;
+	}
+	if (tf->tf_trapno == T_PGFLT) {
+		page_fault_handler(tf);
+		return;
+	}
+	if (tf->tf_trapno == T_BRKPT) {
+		monitor(tf);
+		return;
+	}
+	if (tf->tf_trapno == T_SYSCALL) {
+		r = syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx,
+                       tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
+        if (r < 0)
+            panic("trap.c/syscall : %e\n", r);
+        else
+            tf->tf_regs.reg_eax = r;
+		return;
+	}
 	// Handle spurious interrupts
 	// The hardware sometimes raises these because of noise on the
 	// IRQ line or other reasons. We don't care.
@@ -309,6 +261,8 @@ trap(struct Trapframe *tf)
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
 		// LAB 4: Your code here.
+		lock_kernel();
+
 		assert(curenv);
 
 		// Garbage collect if current enviroment is a zombie
