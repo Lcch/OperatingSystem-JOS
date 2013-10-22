@@ -548,6 +548,7 @@ env_run(struct Env *e)
 
 	// LAB 3: Your code here.
 	// cprintf("I am in env_run\n");
+	
     if (curenv != NULL) {
         // context switch
         if (curenv->env_status == ENV_RUNNING) {

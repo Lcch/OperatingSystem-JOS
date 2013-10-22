@@ -26,7 +26,7 @@ TRAP frame at 0xeffeffbc from CPU 1
   ds   0x----0010
   trap 0x0000000d General Protection
   err  0x00000102
-  eip  0xf01045de
+  eip  0xf0104726
   cs   0x----0008
   flag 0x00000206
 kernel panic on CPU 1 at kern/trap.c:230: unhandled trap in kernel

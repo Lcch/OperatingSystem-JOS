@@ -187,7 +187,8 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
-    cprintf("CPU %d, TRAP NUM : %u\n", cpunum(), tf->tf_trapno);
+    // cprintf("CPU %d, TRAP NUM : %u\n", cpunum(), tf->tf_trapno);
+    
     int r;
 
 	if (tf->tf_trapno == T_DEBUG) {
@@ -207,10 +208,12 @@ trap_dispatch(struct Trapframe *tf)
                        tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
         if (r < 0)
             panic("trap.c/syscall : %e\n", r);
-        else
+        else {
             tf->tf_regs.reg_eax = r;
-		return;
+    	}
+        return;
 	}
+
 	// Handle spurious interrupts
 	// The hardware sometimes raises these because of noise on the
 	// IRQ line or other reasons. We don't care.
@@ -290,10 +293,13 @@ trap(struct Trapframe *tf)
 	// If we made it to this point, then no other environment was
 	// scheduled, so we should return to the current environment
 	// if doing so makes sense.
-	if (curenv && curenv->env_status == ENV_RUNNING)
+	if (curenv && curenv->env_status == ENV_RUNNING) {
+		// cprintf("Env\n");
 		env_run(curenv);
-	else
+	} else {
+		// cprintf("trap sched_yield\n");
 		sched_yield();
+	}
 }
 
 void
@@ -342,6 +348,36 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
+
+    if (curenv->env_pgfault_upcall != NULL) {
+    	// cprintf("user page fault, exist env's page fault upcall \n");
+    	// exist env's page fault upcall
+		// void	user_mem_assert(struct Env *env, const void *va, size_t len, int perm);
+
+    	struct UTrapframe * ut;
+    	if (tf->tf_esp >= UXSTACKTOP - PGSIZE && tf->tf_esp <= UXSTACKTOP - 1) {
+    		// already in user exception stack, should first push an empty 32-bit word
+    		ut = (struct UTrapframe *)((void *)tf->tf_esp - sizeof(struct UTrapframe) - 4);
+	    	user_mem_assert(curenv, (void *)ut, sizeof(struct UTrapframe) + 4, PTE_U | PTE_W);
+    	} else {
+    		// it's the first time in user exception stack
+    		ut = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct UTrapframe));
+	    	user_mem_assert(curenv, (void *)ut, sizeof(struct UTrapframe), PTE_U | PTE_W);
+    	}
+    	
+    	ut->utf_esp = tf->tf_esp;
+    	ut->utf_eflags = tf->tf_eflags;
+    	ut->utf_eip = tf->tf_eip;
+		ut->utf_regs = tf->tf_regs;
+		ut->utf_err = tf->tf_err;
+		ut->utf_fault_va = fault_va;
+
+		curenv->env_tf.tf_eip = (uint32_t)curenv->env_pgfault_upcall;
+		curenv->env_tf.tf_esp = (uint32_t)ut;
+    	env_run(curenv);
+    } else {
+    	// cprintf("user page fault, env_pgfault_upcall == NULL\n");
+   	}
 
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",
