@@ -135,6 +135,8 @@ kern/mpentry.S的链接地址在KERNBASE以上，而AP在是在实模式下无�
 \begin{subsection}{Exercise 3}
 \par
 问题：为什么给kern\_pgdir即可，不用每个cpu的pgdir都赋予值？
+\par
+因为每个cpu的pgdir在高位都是相同的，即内核部分除了内核栈不同外，代码和数据都是映射到相同的地址下。
 \begin{lstlisting}[language=C]
 static void
 mem_init_mp(void)
@@ -219,7 +221,7 @@ sched_yield(void)
 \par
 Question 3: 由于Env在mem\_init中分配了内存进行存储并建立了映射，而这个映射在每个CPU上都是一致的，因此lcr3()后对于Env的还是存在虚拟内存到物理内存的映射的。
 \par
-Question 4: 保存现场是为了之后CPU进行继续处理这个environment的时候保证不会造成错误，
+Question 4: 保存现场是为了之后CPU进行继续处理这个environment的时候保证不会造成错误。保护现场发生在发生中断的情况下，这时候堆栈上储存了当前environment的信息，之后再通过curenv->env\_tf = *tf来保存在environment中。
 \end{subsection}
 
 
@@ -356,6 +358,147 @@ sys_page_unmap(envid_t envid, void *va)
 \end{section}
 
 \begin{section}{Part B: Copy-on-Write Fork}
+\par
+fork()指令会根据当前进程生成一个新的与原进程一样的(除了pid号不一样)的进程，他们拥有独立的内存空间，独立的寄存器，独立的用户栈等等。因此我们对于fork()的执行需要将内存中完全复制一份，这个代价是非常高的。我们可以采用Copy-on-Write的技术，使用Copy-on-Write的原因在于，fork()中有的内存是多个进程是只读的，那么我们完全可以将这部分的内存不进行复制；其次并不是所有的数据都需要更改，所以我们可以共同使用同一个物理内存，当进行写操作的时候，再分为独立的内存。其次还有一个原因是许多情况下fork()之后会执行exec()，因此fork()采用Copy-on-Write是一个比较很好的减少不必要操作，节省内存的一个方法。
+\par
+如何得知某一块内存是被多个进程共用，如何得知这样的内存在被写的时候需要进行复制。对于前一个问题，PTE表项中有由一个专门的标志为PTE\_COW，表示这个页是否使用了Copy-on-Write。如何在写的时候进行复制，这里采用触发Page Fault的方法。JOS在内核中注册了一个Page fault的处理程序，允许用户进程将自己的页错误函数注册到进程结构中。这样当发生页错误的时候可以在user-level下实现对page level的处理，增大了灵活性，而且一定程度下节省了page fault霸占内核的时间。
+\par
+为了实现user-level的page fault，那么就不能使用内核栈用于保存信息，因此就出现了Exception Stack，是user-level page fault handler运行时用的栈，用于保存信息。
+
+\begin{subsection}{Exercise 8}
+\par
+如果用户需要使用自己的Page Fault Handler,则事先需要向内核注册handler所在的位置，保存在用户进程的env\_pagfalut\_upcall变量中，此处就是注册user-level page fault handler。
+\begin{lstlisting}[language=C]
+static int
+sys_env_set_pgfault_upcall(envid_t envid, void *func)
+{
+	struct Env * env;
+	int r = envid2env(envid, &env, 1);
+	if (r < 0) return r;
+
+	env->env_pgfault_upcall = func;
+	return 0;
+}
+\end{lstlisting}
+\end{subsection}
+
+\par
+当产生Page Fault的时候，如果是内核模式下产生的，则产生panic，一定是系统出现了bug。如果是用户模式下产生的page fault且存在user-level page fault的handler的时候，则需要保存现场信息至user exception stack。并设置好当前env的eip为user-level page fault handler的入口地址，并将栈指向当前user exception stack的位置。然后返回用户态执行user-level page fault handler。特别要注意在user-level page fault handler中，是在用户模式下执行的，并且所使用的栈是在user exception stack上。当user-level page fault handler执行完成后，会切换会用户进程和用户运行栈下继续执行。
+\begin{subsection}{Exercise 9}
+\par
+此处就为kernel在接受到page\_fault异常的时候，进行的处理。如果是在用户模式且存在注册的page fault handler，则需要存栈。如果是page fault嵌套，则需要在异常栈开始的地方多压一个空的32-bit word。为什么要这样做，后面的exercise会进行解释。
+\begin{lstlisting}[language=C]
+void
+page_fault_handler(struct Trapframe *tf)
+{
+	uint32_t fault_va;
+
+	// Read processor's CR2 register to find the faulting address
+	fault_va = rcr2();
+
+	// Handle kernel-mode page faults.
+
+	// LAB 3: Your code here.
+	if (tf->tf_cs == GD_KT)
+    	panic("page_fault_handler : page fault in kernel\n");
+    
+    	if (curenv->env_pgfault_upcall != NULL) {
+    		// exist env's page fault upcall
+		
+   	 	struct UTrapframe * ut;
+   	 	if (tf->tf_esp >= UXSTACKTOP - PGSIZE && tf->tf_esp <= UXSTACKTOP - 1) {
+    			// already in user exception stack, should first push an empty 32-bit word
+    			ut = (struct UTrapframe *)((void *)tf->tf_esp - sizeof(struct UTrapframe) - 4);
+	 	   	user_mem_assert(curenv, (void *)ut, sizeof(struct UTrapframe) + 4, PTE_U | PTE_W);
+  	  	} else {
+    			// it's the first time in user exception stack
+    			ut = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct UTrapframe));
+		    	user_mem_assert(curenv, (void *)ut, sizeof(struct UTrapframe), PTE_U | PTE_W);
+   	 	}
+    	
+    		ut->utf_esp = tf->tf_esp;
+   	 	ut->utf_eflags = tf->tf_eflags;
+   	 	ut->utf_eip = tf->tf_eip;
+		ut->utf_regs = tf->tf_regs;
+		ut->utf_err = tf->tf_err;
+		ut->utf_fault_va = fault_va;
+
+		curenv->env_tf.tf_eip = (uint32_t)curenv->env_pgfault_upcall;
+		curenv->env_tf.tf_esp = (uint32_t)ut;
+   	 	env_run(curenv);
+    } 
+
+	// Destroy the environment that caused the fault.
+	cprintf("[%08x] user fault va %08x ip %08x\n",
+		curenv->env_id, fault_va, tf->tf_eip);
+	print_trapframe(tf);
+	env_destroy(curenv);
+}
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{Exercise 10}
+\par
+\_pgfault\_upcall实际上实现到真正handler的跳转，待handler处理完后进行环境的恢复。对于栈的恢复是比较简单的，因为old-esp和old-ebp已经存在了栈中，而对于eip的恢复就需要使用ret的机制，即弹出栈顶元素作为eip，跳转到eip的位置。因此我们在ret的之前只需要把eip存放在栈顶的位置即可，应该放在哪里？还记得如果产生了page fault的嵌套，则在栈中会多存放一个空的4字节，这就是用于返回eip的存放。对于第一层的page fault，则可以把eip放在原来的用户运行栈的下一个4字节位置，并将\%esp指向eip的位置，使用ret就可以实现跳转了。
+\par
+对于4字节是否是必须的？为什么不能在最后再将返回的\%eip弹入栈中？这是因为你是无法不污染寄存器的情况下实现这样的操作的，即为了在最后将\%eip弹入栈中，你必须需要寄存器来存储。而这样对于保存其值的寄存器便无法不被污染。
+\begin{lstlisting}[language=C]
+	// fix old esp
+	movl 0x30(%esp), %eax
+	subl $0x4, %eax
+	movl %eax, 0x30(%esp)
+
+	// set trap-time %eip
+	movl 0x28(%esp), %ebx
+	movl %ebx, (%eax)
+
+	// Restore the trap-time registers.  After you do this, you
+	// can no longer modify any general-purpose registers.
+	addl $0x08, %esp 	// ignore err_code and fault_va
+	popal 				// restore registers
+
+	// Restore eflags from the stack.  After you do this, you can
+	// no longer use arithmetic operations or anything else that
+	// modifies eflags.
+	addl $0x04, %esp 	// ignore eip 
+	popfl				// modify eflags
+
+	// Switch back to the adjusted trap-time stack.
+	popl %esp
+
+	// Return to re-execute the instruction that faulted.
+	ret
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{Exercise 11}
+\par
+这里实际上是提供给用户的库函数，需要做的有申请分配exception stack的空间，以及系统调用设置user-level page fault函数。注意给系统的实际上是\_pgfault\_upcall，这是user-level page fault的入口程序，在实际的handler存放在\_pgfault\_handler中，这样从内核态到用户态page fault的转换，实际上是到了\_pgfault\_upcall，再在其中实现到真正handler:\_pgfault\_handler的跳转。
+\begin{lstlisting}[language=C]
+void
+set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
+{
+	int r;
+	if (_pgfault_handler == 0) {
+		// First time through!	
+		// LAB 4: Your code here.
+		//int sys_page_alloc(envid_t envid, void *va, int perm)
+		r = sys_page_alloc(0, (void*)(UXSTACKTOP - PGSIZE), PTE_U | PTE_W | PTE_P);
+		if (r < 0) {
+			panic("sys_page_alloc error : %e\n", r);
+		}
+		// how to know envid, put 0, envid2env will help us to get curenv in syscall
+		r = sys_env_set_pgfault_upcall(0, _pgfault_upcall);		
+		if (r < 0) {
+			panic("sys_env_set_pgfault_upcall error : %e\n", r);
+		}
+	}
+	// Save handler pointer for assembly to call.
+	_pgfault_handler = handler;
+}
+\end{lstlisting}
+\end{subsection}
+
 \end{section}
 
 \end{document}

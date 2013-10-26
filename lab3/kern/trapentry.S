@@ -86,7 +86,7 @@ vectors:
  	MYTH_NULL()
  	MYTH_NOEC(vec6, T_BOUND)
 	MYTH_NOEC(vec7, T_DEVICE)
- 	MYTH_NOEC(vec8, T_DBLFLT)
+ 	MYTH(vec8, T_DBLFLT)
  	MYTH_NULL()
  	MYTH(vec10, T_TSS)
  	MYTH(vec11, T_SEGNP)

@@ -74,6 +74,14 @@ trap_init(void)
 	// LAB 3: Your code here.  
     extern uint32_t vectors[];
     extern void vec48();
+    extern void vec32();
+    extern void vec33();
+    extern void vec36();
+    extern void vec39();
+    extern void vec46();
+    extern void vec51();
+    
+
     int i;
     for (i = 0; i != 20; i++) {
     	if (i == T_BRKPT) {
@@ -82,8 +90,17 @@ trap_init(void)
     		SETGATE(idt[i], 0, GD_KT, vectors[i], 0);
     	}
     }
-    SETGATE(idt[48], 0, GD_KT, vec48, 3);
+    SETGATE(idt[IRQ_OFFSET + IRQ_TIMER], 0, GD_KT, vec32, 0);
+    SETGATE(idt[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, vec33, 0);
+    SETGATE(idt[IRQ_OFFSET + IRQ_SERIAL], 0, GD_KT, vec36, 0);
+    SETGATE(idt[IRQ_OFFSET + IRQ_SPURIOUS], 0, GD_KT, vec39, 0);
+    SETGATE(idt[IRQ_OFFSET + IRQ_IDE], 0, GD_KT, vec46, 0);
 
+    SETGATE(idt[T_SYSCALL], 0, GD_KT, vec48, 3);
+	
+	SETGATE(idt[IRQ_OFFSET + IRQ_ERROR], 0, GD_KT, vec51, 0);
+    
+ 	
 	// Per-CPU setup 
 	trap_init_percpu();
 }
@@ -206,11 +223,14 @@ trap_dispatch(struct Trapframe *tf)
 	if (tf->tf_trapno == T_SYSCALL) {
 		r = syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx,
                        tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
+		tf->tf_regs.reg_eax = r;
+        /*
         if (r < 0)
             panic("trap.c/syscall : %e\n", r);
         else {
             tf->tf_regs.reg_eax = r;
     	}
+    	*/
         return;
 	}
 
@@ -226,6 +246,11 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle clock interrupts. Don't forget to acknowledge the
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER) {
+		lapic_eoi();
+		sched_yield();
+		return;
+	}
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);

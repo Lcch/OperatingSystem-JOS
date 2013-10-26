@@ -66,7 +66,7 @@ umain(int argc, char **argv)
   80005f:	83 c4 0c             	add    $0xc,%esp
   800062:	ff 75 f4             	pushl  -0xc(%ebp)
   800065:	53                   	push   %ebx
-  800066:	68 00 10 80 00       	push   $0x801000
+  800066:	68 a0 10 80 00       	push   $0x8010a0
   80006b:	e8 28 01 00 00       	call   800198 <cprintf>
   800070:	83 c4 10             	add    $0x10,%esp
   800073:	eb dd                	jmp    800052 <umain+0x1e>
@@ -76,7 +76,7 @@ umain(int argc, char **argv)
   800075:	83 ec 04             	sub    $0x4,%esp
   800078:	ff 35 c4 00 c0 ee    	pushl  0xeec000c4
   80007e:	50                   	push   %eax
-  80007f:	68 11 10 80 00       	push   $0x801011
+  80007f:	68 b1 10 80 00       	push   $0x8010b1
   800084:	e8 0f 01 00 00       	call   800198 <cprintf>
   800089:	83 c4 10             	add    $0x10,%esp
 		while (1)
@@ -85,7 +85,7 @@ umain(int argc, char **argv)
   80008e:	6a 00                	push   $0x0
   800090:	6a 00                	push   $0x0
   800092:	ff 35 c4 00 c0 ee    	pushl  0xeec000c4
-  800098:	e8 46 0c 00 00       	call   800ce3 <ipc_send>
+  800098:	e8 a4 0c 00 00       	call   800d41 <ipc_send>
   80009d:	83 c4 10             	add    $0x10,%esp
   8000a0:	eb ea                	jmp    80008c <umain+0x58>
 	...
@@ -311,7 +311,7 @@ printnum(void (*putch)(int, void*), void *putdat,
   8001f7:	ff 75 d0             	pushl  -0x30(%ebp)
   8001fa:	ff 75 dc             	pushl  -0x24(%ebp)
   8001fd:	ff 75 d8             	pushl  -0x28(%ebp)
-  800200:	e8 9b 0b 00 00       	call   800da0 <__udivdi3>
+  800200:	e8 37 0c 00 00       	call   800e3c <__udivdi3>
   800205:	83 c4 18             	add    $0x18,%esp
   800208:	52                   	push   %edx
   800209:	50                   	push   %eax
@@ -350,9 +350,9 @@ printnum(void (*putch)(int, void*), void *putdat,
   800233:	ff 75 d0             	pushl  -0x30(%ebp)
   800236:	ff 75 dc             	pushl  -0x24(%ebp)
   800239:	ff 75 d8             	pushl  -0x28(%ebp)
-  80023c:	e8 7b 0c 00 00       	call   800ebc <__umoddi3>
+  80023c:	e8 17 0d 00 00       	call   800f58 <__umoddi3>
   800241:	83 c4 14             	add    $0x14,%esp
-  800244:	0f be 80 32 10 80 00 	movsbl 0x801032(%eax),%eax
+  800244:	0f be 80 d2 10 80 00 	movsbl 0x8010d2(%eax),%eax
   80024b:	50                   	push   %eax
   80024c:	ff 55 e4             	call   *-0x1c(%ebp)
   80024f:	83 c4 10             	add    $0x10,%esp
@@ -607,7 +607,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
   80037d:	3c 55                	cmp    $0x55,%al
   80037f:	0f 87 e0 02 00 00    	ja     800665 <vprintfmt+0x368>
   800385:	0f b6 c0             	movzbl %al,%eax
-  800388:	ff 24 85 00 11 80 00 	jmp    *0x801100(,%eax,4)
+  800388:	ff 24 85 a0 11 80 00 	jmp    *0x8011a0(,%eax,4)
 		case '6':
 		case '7':
 		case '8':
@@ -775,12 +775,12 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			if (err >= MAXERROR || (p = error_string[err]) == NULL)
   80042f:	83 f8 08             	cmp    $0x8,%eax
   800432:	7f 0b                	jg     80043f <vprintfmt+0x142>
-  800434:	8b 04 85 60 12 80 00 	mov    0x801260(,%eax,4),%eax
+  800434:	8b 04 85 00 13 80 00 	mov    0x801300(,%eax,4),%eax
   80043b:	85 c0                	test   %eax,%eax
   80043d:	75 1a                	jne    800459 <vprintfmt+0x15c>
 				printfmt(putch, putdat, "error %d", err);
   80043f:	52                   	push   %edx
-  800440:	68 4a 10 80 00       	push   $0x80104a
+  800440:	68 ea 10 80 00       	push   $0x8010ea
   800445:	57                   	push   %edi
   800446:	ff 75 08             	pushl  0x8(%ebp)
   800449:	e8 92 fe ff ff       	call   8002e0 <printfmt>
@@ -802,7 +802,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			else
 				printfmt(putch, putdat, "%s", p);
   800459:	50                   	push   %eax
-  80045a:	68 53 10 80 00       	push   $0x801053
+  80045a:	68 f3 10 80 00       	push   $0x8010f3
   80045f:	57                   	push   %edi
   800460:	ff 75 08             	pushl  0x8(%ebp)
   800463:	e8 78 fe ff ff       	call   8002e0 <printfmt>
@@ -833,7 +833,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
   80048c:	85 c0                	test   %eax,%eax
   80048e:	75 07                	jne    800497 <vprintfmt+0x19a>
 				p = "(null)";
-  800490:	c7 45 d0 43 10 80 00 	movl   $0x801043,-0x30(%ebp)
+  800490:	c7 45 d0 e3 10 80 00 	movl   $0x8010e3,-0x30(%ebp)
 			if (width > 0 && padc != '-')
   800497:	85 db                	test   %ebx,%ebx
   800499:	7e 42                	jle    8004dd <vprintfmt+0x1e0>
@@ -2201,10 +2201,10 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
   800af7:	83 ec 0c             	sub    $0xc,%esp
   800afa:	50                   	push   %eax
   800afb:	ff 75 e4             	pushl  -0x1c(%ebp)
-  800afe:	68 84 12 80 00       	push   $0x801284
+  800afe:	68 24 13 80 00       	push   $0x801324
   800b03:	6a 42                	push   $0x42
-  800b05:	68 a1 12 80 00       	push   $0x8012a1
-  800b0a:	e8 49 02 00 00       	call   800d58 <_panic>
+  800b05:	68 41 13 80 00       	push   $0x801341
+  800b0a:	e8 e5 02 00 00       	call   800df4 <_panic>
 
 	return ret;
 }
@@ -2488,708 +2488,813 @@ ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 {
   800ccc:	55                   	push   %ebp
   800ccd:	89 e5                	mov    %esp,%ebp
-  800ccf:	83 ec 0c             	sub    $0xc,%esp
+  800ccf:	56                   	push   %esi
+  800cd0:	53                   	push   %ebx
+  800cd1:	8b 75 08             	mov    0x8(%ebp),%esi
+  800cd4:	8b 45 0c             	mov    0xc(%ebp),%eax
+  800cd7:	8b 5d 10             	mov    0x10(%ebp),%ebx
 	// LAB 4: Your code here.
-	panic("ipc_recv not implemented");
-  800cd2:	68 af 12 80 00       	push   $0x8012af
-  800cd7:	6a 1a                	push   $0x1a
-  800cd9:	68 c8 12 80 00       	push   $0x8012c8
-  800cde:	e8 75 00 00 00       	call   800d58 <_panic>
+	int r;
+	if (pg != NULL) {
+  800cda:	85 c0                	test   %eax,%eax
+  800cdc:	74 0e                	je     800cec <ipc_recv+0x20>
+		r = sys_ipc_recv(pg);
+  800cde:	83 ec 0c             	sub    $0xc,%esp
+  800ce1:	50                   	push   %eax
+  800ce2:	e8 c1 ff ff ff       	call   800ca8 <sys_ipc_recv>
+  800ce7:	83 c4 10             	add    $0x10,%esp
+  800cea:	eb 10                	jmp    800cfc <ipc_recv+0x30>
+	} else {
+		r = sys_ipc_recv((void *)UTOP);
+  800cec:	83 ec 0c             	sub    $0xc,%esp
+  800cef:	68 00 00 c0 ee       	push   $0xeec00000
+  800cf4:	e8 af ff ff ff       	call   800ca8 <sys_ipc_recv>
+  800cf9:	83 c4 10             	add    $0x10,%esp
+	}
 
-00800ce3 <ipc_send>:
+	if (r == 0) {
+  800cfc:	85 c0                	test   %eax,%eax
+  800cfe:	75 26                	jne    800d26 <ipc_recv+0x5a>
+		if (from_env_store != NULL) *from_env_store = thisenv->env_ipc_from;
+  800d00:	85 f6                	test   %esi,%esi
+  800d02:	74 0a                	je     800d0e <ipc_recv+0x42>
+  800d04:	a1 04 20 80 00       	mov    0x802004,%eax
+  800d09:	8b 40 74             	mov    0x74(%eax),%eax
+  800d0c:	89 06                	mov    %eax,(%esi)
+		if (perm_store != NULL) *perm_store = thisenv->env_ipc_perm;
+  800d0e:	85 db                	test   %ebx,%ebx
+  800d10:	74 0a                	je     800d1c <ipc_recv+0x50>
+  800d12:	a1 04 20 80 00       	mov    0x802004,%eax
+  800d17:	8b 40 78             	mov    0x78(%eax),%eax
+  800d1a:	89 03                	mov    %eax,(%ebx)
+		// cprintf("Receive %d\n", thisenv->env_ipc_value);
+		return thisenv->env_ipc_value;
+  800d1c:	a1 04 20 80 00       	mov    0x802004,%eax
+  800d21:	8b 40 70             	mov    0x70(%eax),%eax
+  800d24:	eb 14                	jmp    800d3a <ipc_recv+0x6e>
+	} else {
+		// fails;
+		if (from_env_store != NULL) *from_env_store = 0;
+  800d26:	85 f6                	test   %esi,%esi
+  800d28:	74 06                	je     800d30 <ipc_recv+0x64>
+  800d2a:	c7 06 00 00 00 00    	movl   $0x0,(%esi)
+		if (perm_store != NULL) *perm_store = 0;
+  800d30:	85 db                	test   %ebx,%ebx
+  800d32:	74 06                	je     800d3a <ipc_recv+0x6e>
+  800d34:	c7 03 00 00 00 00    	movl   $0x0,(%ebx)
+		return r;
+	}
+}
+  800d3a:	8d 65 f8             	lea    -0x8(%ebp),%esp
+  800d3d:	5b                   	pop    %ebx
+  800d3e:	5e                   	pop    %esi
+  800d3f:	c9                   	leave  
+  800d40:	c3                   	ret    
+
+00800d41 <ipc_send>:
 //   Use sys_yield() to be CPU-friendly.
 //   If 'pg' is null, pass sys_ipc_recv a value that it will understand
 //   as meaning "no page".  (Zero is not the right value.)
 void
 ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 {
-  800ce3:	55                   	push   %ebp
-  800ce4:	89 e5                	mov    %esp,%ebp
-  800ce6:	83 ec 0c             	sub    $0xc,%esp
+  800d41:	55                   	push   %ebp
+  800d42:	89 e5                	mov    %esp,%ebp
+  800d44:	57                   	push   %edi
+  800d45:	56                   	push   %esi
+  800d46:	53                   	push   %ebx
+  800d47:	83 ec 0c             	sub    $0xc,%esp
+  800d4a:	8b 7d 0c             	mov    0xc(%ebp),%edi
+  800d4d:	8b 5d 10             	mov    0x10(%ebp),%ebx
+  800d50:	8b 75 14             	mov    0x14(%ebp),%esi
 	// LAB 4: Your code here.
-	panic("ipc_send not implemented");
-  800ce9:	68 d2 12 80 00       	push   $0x8012d2
-  800cee:	6a 2a                	push   $0x2a
-  800cf0:	68 c8 12 80 00       	push   $0x8012c8
-  800cf5:	e8 5e 00 00 00       	call   800d58 <_panic>
+	// int sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, int perm)
+	int r;
+	if (pg == NULL) pg = (void *)UTOP;
+  800d53:	85 db                	test   %ebx,%ebx
+  800d55:	75 25                	jne    800d7c <ipc_send+0x3b>
+  800d57:	bb 00 00 c0 ee       	mov    $0xeec00000,%ebx
+  800d5c:	eb 1e                	jmp    800d7c <ipc_send+0x3b>
+	
+	while ((r = sys_ipc_try_send(to_env, val, pg, perm)) != 0) {
+		if (r == -E_IPC_NOT_RECV) {
+  800d5e:	83 f8 f9             	cmp    $0xfffffff9,%eax
+  800d61:	75 07                	jne    800d6a <ipc_send+0x29>
+			// cprintf("Try Again and Again....\n");
+			sys_yield();
+  800d63:	e8 41 fe ff ff       	call   800ba9 <sys_yield>
+  800d68:	eb 12                	jmp    800d7c <ipc_send+0x3b>
+		} else {
+			panic("ipc_send error %e\n", r);
+  800d6a:	50                   	push   %eax
+  800d6b:	68 4f 13 80 00       	push   $0x80134f
+  800d70:	6a 43                	push   $0x43
+  800d72:	68 62 13 80 00       	push   $0x801362
+  800d77:	e8 78 00 00 00       	call   800df4 <_panic>
+	// LAB 4: Your code here.
+	// int sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, int perm)
+	int r;
+	if (pg == NULL) pg = (void *)UTOP;
+	
+	while ((r = sys_ipc_try_send(to_env, val, pg, perm)) != 0) {
+  800d7c:	56                   	push   %esi
+  800d7d:	53                   	push   %ebx
+  800d7e:	57                   	push   %edi
+  800d7f:	ff 75 08             	pushl  0x8(%ebp)
+  800d82:	e8 fc fe ff ff       	call   800c83 <sys_ipc_try_send>
+  800d87:	83 c4 10             	add    $0x10,%esp
+  800d8a:	85 c0                	test   %eax,%eax
+  800d8c:	75 d0                	jne    800d5e <ipc_send+0x1d>
+		} else {
+			panic("ipc_send error %e\n", r);
+		}
+	}
+	return;
+}
+  800d8e:	8d 65 f4             	lea    -0xc(%ebp),%esp
+  800d91:	5b                   	pop    %ebx
+  800d92:	5e                   	pop    %esi
+  800d93:	5f                   	pop    %edi
+  800d94:	c9                   	leave  
+  800d95:	c3                   	ret    
 
-00800cfa <ipc_find_env>:
+00800d96 <ipc_find_env>:
 // Find the first environment of the given type.  We'll use this to
 // find special environments.
 // Returns 0 if no such environment exists.
 envid_t
 ipc_find_env(enum EnvType type)
 {
-  800cfa:	55                   	push   %ebp
-  800cfb:	89 e5                	mov    %esp,%ebp
-  800cfd:	53                   	push   %ebx
-  800cfe:	8b 5d 08             	mov    0x8(%ebp),%ebx
+  800d96:	55                   	push   %ebp
+  800d97:	89 e5                	mov    %esp,%ebp
+  800d99:	53                   	push   %ebx
+  800d9a:	8b 5d 08             	mov    0x8(%ebp),%ebx
 	int i;
 	for (i = 0; i < NENV; i++)
 		if (envs[i].env_type == type)
-  800d01:	39 1d 50 00 c0 ee    	cmp    %ebx,0xeec00050
-  800d07:	74 22                	je     800d2b <ipc_find_env+0x31>
+  800d9d:	39 1d 50 00 c0 ee    	cmp    %ebx,0xeec00050
+  800da3:	74 22                	je     800dc7 <ipc_find_env+0x31>
 // Returns 0 if no such environment exists.
 envid_t
 ipc_find_env(enum EnvType type)
 {
 	int i;
 	for (i = 0; i < NENV; i++)
-  800d09:	b8 01 00 00 00       	mov    $0x1,%eax
+  800da5:	b8 01 00 00 00       	mov    $0x1,%eax
 		if (envs[i].env_type == type)
-  800d0e:	8d 0c 85 00 00 00 00 	lea    0x0(,%eax,4),%ecx
-  800d15:	89 c2                	mov    %eax,%edx
-  800d17:	c1 e2 07             	shl    $0x7,%edx
-  800d1a:	29 ca                	sub    %ecx,%edx
-  800d1c:	81 c2 00 00 c0 ee    	add    $0xeec00000,%edx
-  800d22:	8b 52 50             	mov    0x50(%edx),%edx
-  800d25:	39 da                	cmp    %ebx,%edx
-  800d27:	75 1d                	jne    800d46 <ipc_find_env+0x4c>
-  800d29:	eb 05                	jmp    800d30 <ipc_find_env+0x36>
+  800daa:	8d 0c 85 00 00 00 00 	lea    0x0(,%eax,4),%ecx
+  800db1:	89 c2                	mov    %eax,%edx
+  800db3:	c1 e2 07             	shl    $0x7,%edx
+  800db6:	29 ca                	sub    %ecx,%edx
+  800db8:	81 c2 00 00 c0 ee    	add    $0xeec00000,%edx
+  800dbe:	8b 52 50             	mov    0x50(%edx),%edx
+  800dc1:	39 da                	cmp    %ebx,%edx
+  800dc3:	75 1d                	jne    800de2 <ipc_find_env+0x4c>
+  800dc5:	eb 05                	jmp    800dcc <ipc_find_env+0x36>
 // Returns 0 if no such environment exists.
 envid_t
 ipc_find_env(enum EnvType type)
 {
 	int i;
 	for (i = 0; i < NENV; i++)
-  800d2b:	b8 00 00 00 00       	mov    $0x0,%eax
+  800dc7:	b8 00 00 00 00       	mov    $0x0,%eax
 		if (envs[i].env_type == type)
 			return envs[i].env_id;
-  800d30:	8d 14 85 00 00 00 00 	lea    0x0(,%eax,4),%edx
-  800d37:	c1 e0 07             	shl    $0x7,%eax
-  800d3a:	29 d0                	sub    %edx,%eax
-  800d3c:	05 08 00 c0 ee       	add    $0xeec00008,%eax
-  800d41:	8b 40 40             	mov    0x40(%eax),%eax
-  800d44:	eb 0c                	jmp    800d52 <ipc_find_env+0x58>
+  800dcc:	8d 14 85 00 00 00 00 	lea    0x0(,%eax,4),%edx
+  800dd3:	c1 e0 07             	shl    $0x7,%eax
+  800dd6:	29 d0                	sub    %edx,%eax
+  800dd8:	05 08 00 c0 ee       	add    $0xeec00008,%eax
+  800ddd:	8b 40 40             	mov    0x40(%eax),%eax
+  800de0:	eb 0c                	jmp    800dee <ipc_find_env+0x58>
 // Returns 0 if no such environment exists.
 envid_t
 ipc_find_env(enum EnvType type)
 {
 	int i;
 	for (i = 0; i < NENV; i++)
-  800d46:	40                   	inc    %eax
-  800d47:	3d 00 04 00 00       	cmp    $0x400,%eax
-  800d4c:	75 c0                	jne    800d0e <ipc_find_env+0x14>
+  800de2:	40                   	inc    %eax
+  800de3:	3d 00 04 00 00       	cmp    $0x400,%eax
+  800de8:	75 c0                	jne    800daa <ipc_find_env+0x14>
 		if (envs[i].env_type == type)
 			return envs[i].env_id;
 	return 0;
-  800d4e:	66 b8 00 00          	mov    $0x0,%ax
+  800dea:	66 b8 00 00          	mov    $0x0,%ax
 }
-  800d52:	5b                   	pop    %ebx
-  800d53:	c9                   	leave  
-  800d54:	c3                   	ret    
-  800d55:	00 00                	add    %al,(%eax)
+  800dee:	5b                   	pop    %ebx
+  800def:	c9                   	leave  
+  800df0:	c3                   	ret    
+  800df1:	00 00                	add    %al,(%eax)
 	...
 
-00800d58 <_panic>:
+00800df4 <_panic>:
  * It prints "panic: <message>", then causes a breakpoint exception,
  * which causes JOS to enter the JOS kernel monitor.
  */
 void
 _panic(const char *file, int line, const char *fmt, ...)
 {
-  800d58:	55                   	push   %ebp
-  800d59:	89 e5                	mov    %esp,%ebp
-  800d5b:	56                   	push   %esi
-  800d5c:	53                   	push   %ebx
+  800df4:	55                   	push   %ebp
+  800df5:	89 e5                	mov    %esp,%ebp
+  800df7:	56                   	push   %esi
+  800df8:	53                   	push   %ebx
 	va_list ap;
 
 	va_start(ap, fmt);
-  800d5d:	8d 75 14             	lea    0x14(%ebp),%esi
+  800df9:	8d 75 14             	lea    0x14(%ebp),%esi
 
 	// Print the panic message
 	cprintf("[%08x] user panic in %s at %s:%d: ",
-  800d60:	8b 1d 00 20 80 00    	mov    0x802000,%ebx
-  800d66:	e8 1a fe ff ff       	call   800b85 <sys_getenvid>
-  800d6b:	83 ec 0c             	sub    $0xc,%esp
-  800d6e:	ff 75 0c             	pushl  0xc(%ebp)
-  800d71:	ff 75 08             	pushl  0x8(%ebp)
-  800d74:	53                   	push   %ebx
-  800d75:	50                   	push   %eax
-  800d76:	68 ec 12 80 00       	push   $0x8012ec
-  800d7b:	e8 18 f4 ff ff       	call   800198 <cprintf>
+  800dfc:	8b 1d 00 20 80 00    	mov    0x802000,%ebx
+  800e02:	e8 7e fd ff ff       	call   800b85 <sys_getenvid>
+  800e07:	83 ec 0c             	sub    $0xc,%esp
+  800e0a:	ff 75 0c             	pushl  0xc(%ebp)
+  800e0d:	ff 75 08             	pushl  0x8(%ebp)
+  800e10:	53                   	push   %ebx
+  800e11:	50                   	push   %eax
+  800e12:	68 6c 13 80 00       	push   $0x80136c
+  800e17:	e8 7c f3 ff ff       	call   800198 <cprintf>
 		sys_getenvid(), binaryname, file, line);
 	vcprintf(fmt, ap);
-  800d80:	83 c4 18             	add    $0x18,%esp
-  800d83:	56                   	push   %esi
-  800d84:	ff 75 10             	pushl  0x10(%ebp)
-  800d87:	e8 bb f3 ff ff       	call   800147 <vcprintf>
+  800e1c:	83 c4 18             	add    $0x18,%esp
+  800e1f:	56                   	push   %esi
+  800e20:	ff 75 10             	pushl  0x10(%ebp)
+  800e23:	e8 1f f3 ff ff       	call   800147 <vcprintf>
 	cprintf("\n");
-  800d8c:	c7 04 24 0f 10 80 00 	movl   $0x80100f,(%esp)
-  800d93:	e8 00 f4 ff ff       	call   800198 <cprintf>
-  800d98:	83 c4 10             	add    $0x10,%esp
+  800e28:	c7 04 24 60 13 80 00 	movl   $0x801360,(%esp)
+  800e2f:	e8 64 f3 ff ff       	call   800198 <cprintf>
+  800e34:	83 c4 10             	add    $0x10,%esp
 
 	// Cause a breakpoint exception
 	while (1)
 		asm volatile("int3");
-  800d9b:	cc                   	int3   
-  800d9c:	eb fd                	jmp    800d9b <_panic+0x43>
+  800e37:	cc                   	int3   
+  800e38:	eb fd                	jmp    800e37 <_panic+0x43>
 	...
 
-00800da0 <__udivdi3>:
+00800e3c <__udivdi3>:
 #endif
 
 #ifdef L_udivdi3
 UDWtype
 __udivdi3 (UDWtype n, UDWtype d)
 {
-  800da0:	55                   	push   %ebp
-  800da1:	89 e5                	mov    %esp,%ebp
-  800da3:	57                   	push   %edi
-  800da4:	56                   	push   %esi
-  800da5:	83 ec 10             	sub    $0x10,%esp
-  800da8:	8b 7d 08             	mov    0x8(%ebp),%edi
-  800dab:	8b 4d 10             	mov    0x10(%ebp),%ecx
+  800e3c:	55                   	push   %ebp
+  800e3d:	89 e5                	mov    %esp,%ebp
+  800e3f:	57                   	push   %edi
+  800e40:	56                   	push   %esi
+  800e41:	83 ec 10             	sub    $0x10,%esp
+  800e44:	8b 7d 08             	mov    0x8(%ebp),%edi
+  800e47:	8b 4d 10             	mov    0x10(%ebp),%ecx
 static inline __attribute__ ((__always_inline__))
 #endif
 UDWtype
 __udivmoddi4 (UDWtype n, UDWtype d, UDWtype *rp)
 {
   const DWunion nn = {.ll = n};
-  800dae:	89 7d f0             	mov    %edi,-0x10(%ebp)
-  800db1:	8b 75 0c             	mov    0xc(%ebp),%esi
+  800e4a:	89 7d f0             	mov    %edi,-0x10(%ebp)
+  800e4d:	8b 75 0c             	mov    0xc(%ebp),%esi
   const DWunion dd = {.ll = d};
-  800db4:	89 4d f4             	mov    %ecx,-0xc(%ebp)
-  800db7:	8b 45 14             	mov    0x14(%ebp),%eax
+  800e50:	89 4d f4             	mov    %ecx,-0xc(%ebp)
+  800e53:	8b 45 14             	mov    0x14(%ebp),%eax
   d1 = dd.s.high;
   n0 = nn.s.low;
   n1 = nn.s.high;
 
 #if !UDIV_NEEDS_NORMALIZATION
   if (d1 == 0)
-  800dba:	85 c0                	test   %eax,%eax
-  800dbc:	75 2e                	jne    800dec <__udivdi3+0x4c>
+  800e56:	85 c0                	test   %eax,%eax
+  800e58:	75 2e                	jne    800e88 <__udivdi3+0x4c>
     {
       if (d0 > n1)
-  800dbe:	39 f1                	cmp    %esi,%ecx
-  800dc0:	77 5a                	ja     800e1c <__udivdi3+0x7c>
+  800e5a:	39 f1                	cmp    %esi,%ecx
+  800e5c:	77 5a                	ja     800eb8 <__udivdi3+0x7c>
 	}
       else
 	{
 	  /* qq = NN / 0d */
 
 	  if (d0 == 0)
-  800dc2:	85 c9                	test   %ecx,%ecx
-  800dc4:	75 0b                	jne    800dd1 <__udivdi3+0x31>
+  800e5e:	85 c9                	test   %ecx,%ecx
+  800e60:	75 0b                	jne    800e6d <__udivdi3+0x31>
 	    d0 = 1 / d0;	/* Divide intentionally by zero.  */
-  800dc6:	b8 01 00 00 00       	mov    $0x1,%eax
-  800dcb:	31 d2                	xor    %edx,%edx
-  800dcd:	f7 f1                	div    %ecx
-  800dcf:	89 c1                	mov    %eax,%ecx
+  800e62:	b8 01 00 00 00       	mov    $0x1,%eax
+  800e67:	31 d2                	xor    %edx,%edx
+  800e69:	f7 f1                	div    %ecx
+  800e6b:	89 c1                	mov    %eax,%ecx
 
 	  udiv_qrnnd (q1, n1, 0, n1, d0);
-  800dd1:	31 d2                	xor    %edx,%edx
-  800dd3:	89 f0                	mov    %esi,%eax
-  800dd5:	f7 f1                	div    %ecx
-  800dd7:	89 c6                	mov    %eax,%esi
+  800e6d:	31 d2                	xor    %edx,%edx
+  800e6f:	89 f0                	mov    %esi,%eax
+  800e71:	f7 f1                	div    %ecx
+  800e73:	89 c6                	mov    %eax,%esi
 	  udiv_qrnnd (q0, n0, n1, n0, d0);
-  800dd9:	89 f8                	mov    %edi,%eax
-  800ddb:	f7 f1                	div    %ecx
-  800ddd:	89 c7                	mov    %eax,%edi
+  800e75:	89 f8                	mov    %edi,%eax
+  800e77:	f7 f1                	div    %ecx
+  800e79:	89 c7                	mov    %eax,%edi
 		}
 	    }
 	}
     }
 
   const DWunion ww = {{.low = q0, .high = q1}};
-  800ddf:	89 f8                	mov    %edi,%eax
-  800de1:	89 f2                	mov    %esi,%edx
+  800e7b:	89 f8                	mov    %edi,%eax
+  800e7d:	89 f2                	mov    %esi,%edx
 #ifdef L_udivdi3
 UDWtype
 __udivdi3 (UDWtype n, UDWtype d)
 {
   return __udivmoddi4 (n, d, (UDWtype *) 0);
 }
-  800de3:	83 c4 10             	add    $0x10,%esp
-  800de6:	5e                   	pop    %esi
-  800de7:	5f                   	pop    %edi
-  800de8:	c9                   	leave  
-  800de9:	c3                   	ret    
-  800dea:	66 90                	xchg   %ax,%ax
+  800e7f:	83 c4 10             	add    $0x10,%esp
+  800e82:	5e                   	pop    %esi
+  800e83:	5f                   	pop    %edi
+  800e84:	c9                   	leave  
+  800e85:	c3                   	ret    
+  800e86:	66 90                	xchg   %ax,%ax
     }
 #endif /* UDIV_NEEDS_NORMALIZATION */
 
   else
     {
       if (d1 > n1)
-  800dec:	39 f0                	cmp    %esi,%eax
-  800dee:	77 1c                	ja     800e0c <__udivdi3+0x6c>
+  800e88:	39 f0                	cmp    %esi,%eax
+  800e8a:	77 1c                	ja     800ea8 <__udivdi3+0x6c>
 	}
       else
 	{
 	  /* 0q = NN / dd */
 
 	  count_leading_zeros (bm, d1);
-  800df0:	0f bd f8             	bsr    %eax,%edi
+  800e8c:	0f bd f8             	bsr    %eax,%edi
 	  if (bm == 0)
-  800df3:	83 f7 1f             	xor    $0x1f,%edi
-  800df6:	75 3c                	jne    800e34 <__udivdi3+0x94>
+  800e8f:	83 f7 1f             	xor    $0x1f,%edi
+  800e92:	75 3c                	jne    800ed0 <__udivdi3+0x94>
 
 		 This special case is necessary, not an optimization.  */
 
 	      /* The condition on the next line takes advantage of that
 		 n1 >= d1 (true due to program flow).  */
 	      if (n1 > d1 || n0 >= d0)
-  800df8:	39 f0                	cmp    %esi,%eax
-  800dfa:	0f 82 90 00 00 00    	jb     800e90 <__udivdi3+0xf0>
-  800e00:	8b 55 f0             	mov    -0x10(%ebp),%edx
-  800e03:	39 55 f4             	cmp    %edx,-0xc(%ebp)
-  800e06:	0f 86 84 00 00 00    	jbe    800e90 <__udivdi3+0xf0>
-  800e0c:	31 f6                	xor    %esi,%esi
-  800e0e:	31 ff                	xor    %edi,%edi
+  800e94:	39 f0                	cmp    %esi,%eax
+  800e96:	0f 82 90 00 00 00    	jb     800f2c <__udivdi3+0xf0>
+  800e9c:	8b 55 f0             	mov    -0x10(%ebp),%edx
+  800e9f:	39 55 f4             	cmp    %edx,-0xc(%ebp)
+  800ea2:	0f 86 84 00 00 00    	jbe    800f2c <__udivdi3+0xf0>
+  800ea8:	31 f6                	xor    %esi,%esi
+  800eaa:	31 ff                	xor    %edi,%edi
 		}
 	    }
 	}
     }
 
   const DWunion ww = {{.low = q0, .high = q1}};
-  800e10:	89 f8                	mov    %edi,%eax
-  800e12:	89 f2                	mov    %esi,%edx
+  800eac:	89 f8                	mov    %edi,%eax
+  800eae:	89 f2                	mov    %esi,%edx
 #ifdef L_udivdi3
 UDWtype
 __udivdi3 (UDWtype n, UDWtype d)
 {
   return __udivmoddi4 (n, d, (UDWtype *) 0);
 }
-  800e14:	83 c4 10             	add    $0x10,%esp
-  800e17:	5e                   	pop    %esi
-  800e18:	5f                   	pop    %edi
-  800e19:	c9                   	leave  
-  800e1a:	c3                   	ret    
-  800e1b:	90                   	nop
+  800eb0:	83 c4 10             	add    $0x10,%esp
+  800eb3:	5e                   	pop    %esi
+  800eb4:	5f                   	pop    %edi
+  800eb5:	c9                   	leave  
+  800eb6:	c3                   	ret    
+  800eb7:	90                   	nop
     {
       if (d0 > n1)
 	{
 	  /* 0q = nn / 0D */
 
 	  udiv_qrnnd (q0, n0, n1, n0, d0);
-  800e1c:	89 f2                	mov    %esi,%edx
-  800e1e:	89 f8                	mov    %edi,%eax
-  800e20:	f7 f1                	div    %ecx
-  800e22:	89 c7                	mov    %eax,%edi
-  800e24:	31 f6                	xor    %esi,%esi
+  800eb8:	89 f2                	mov    %esi,%edx
+  800eba:	89 f8                	mov    %edi,%eax
+  800ebc:	f7 f1                	div    %ecx
+  800ebe:	89 c7                	mov    %eax,%edi
+  800ec0:	31 f6                	xor    %esi,%esi
 		}
 	    }
 	}
     }
 
   const DWunion ww = {{.low = q0, .high = q1}};
-  800e26:	89 f8                	mov    %edi,%eax
-  800e28:	89 f2                	mov    %esi,%edx
+  800ec2:	89 f8                	mov    %edi,%eax
+  800ec4:	89 f2                	mov    %esi,%edx
 #ifdef L_udivdi3
 UDWtype
 __udivdi3 (UDWtype n, UDWtype d)
 {
   return __udivmoddi4 (n, d, (UDWtype *) 0);
 }
-  800e2a:	83 c4 10             	add    $0x10,%esp
-  800e2d:	5e                   	pop    %esi
-  800e2e:	5f                   	pop    %edi
-  800e2f:	c9                   	leave  
-  800e30:	c3                   	ret    
-  800e31:	8d 76 00             	lea    0x0(%esi),%esi
+  800ec6:	83 c4 10             	add    $0x10,%esp
+  800ec9:	5e                   	pop    %esi
+  800eca:	5f                   	pop    %edi
+  800ecb:	c9                   	leave  
+  800ecc:	c3                   	ret    
+  800ecd:	8d 76 00             	lea    0x0(%esi),%esi
 	      UWtype m1, m0;
 	      /* Normalize.  */
 
 	      b = W_TYPE_SIZE - bm;
 
 	      d1 = (d1 << bm) | (d0 >> b);
-  800e34:	89 f9                	mov    %edi,%ecx
-  800e36:	d3 e0                	shl    %cl,%eax
-  800e38:	89 45 e8             	mov    %eax,-0x18(%ebp)
+  800ed0:	89 f9                	mov    %edi,%ecx
+  800ed2:	d3 e0                	shl    %cl,%eax
+  800ed4:	89 45 e8             	mov    %eax,-0x18(%ebp)
 	  else
 	    {
 	      UWtype m1, m0;
 	      /* Normalize.  */
 
 	      b = W_TYPE_SIZE - bm;
-  800e3b:	b8 20 00 00 00       	mov    $0x20,%eax
-  800e40:	29 f8                	sub    %edi,%eax
+  800ed7:	b8 20 00 00 00       	mov    $0x20,%eax
+  800edc:	29 f8                	sub    %edi,%eax
 
 	      d1 = (d1 << bm) | (d0 >> b);
-  800e42:	8b 55 f4             	mov    -0xc(%ebp),%edx
-  800e45:	88 c1                	mov    %al,%cl
-  800e47:	d3 ea                	shr    %cl,%edx
-  800e49:	8b 4d e8             	mov    -0x18(%ebp),%ecx
-  800e4c:	09 ca                	or     %ecx,%edx
-  800e4e:	89 55 ec             	mov    %edx,-0x14(%ebp)
+  800ede:	8b 55 f4             	mov    -0xc(%ebp),%edx
+  800ee1:	88 c1                	mov    %al,%cl
+  800ee3:	d3 ea                	shr    %cl,%edx
+  800ee5:	8b 4d e8             	mov    -0x18(%ebp),%ecx
+  800ee8:	09 ca                	or     %ecx,%edx
+  800eea:	89 55 ec             	mov    %edx,-0x14(%ebp)
 	      d0 = d0 << bm;
-  800e51:	8b 55 f4             	mov    -0xc(%ebp),%edx
-  800e54:	89 f9                	mov    %edi,%ecx
-  800e56:	d3 e2                	shl    %cl,%edx
-  800e58:	89 55 f4             	mov    %edx,-0xc(%ebp)
+  800eed:	8b 55 f4             	mov    -0xc(%ebp),%edx
+  800ef0:	89 f9                	mov    %edi,%ecx
+  800ef2:	d3 e2                	shl    %cl,%edx
+  800ef4:	89 55 f4             	mov    %edx,-0xc(%ebp)
 	      n2 = n1 >> b;
-  800e5b:	89 f2                	mov    %esi,%edx
-  800e5d:	88 c1                	mov    %al,%cl
-  800e5f:	d3 ea                	shr    %cl,%edx
-  800e61:	89 55 e8             	mov    %edx,-0x18(%ebp)
+  800ef7:	89 f2                	mov    %esi,%edx
+  800ef9:	88 c1                	mov    %al,%cl
+  800efb:	d3 ea                	shr    %cl,%edx
+  800efd:	89 55 e8             	mov    %edx,-0x18(%ebp)
 	      n1 = (n1 << bm) | (n0 >> b);
-  800e64:	89 f2                	mov    %esi,%edx
-  800e66:	89 f9                	mov    %edi,%ecx
-  800e68:	d3 e2                	shl    %cl,%edx
-  800e6a:	8b 75 f0             	mov    -0x10(%ebp),%esi
-  800e6d:	88 c1                	mov    %al,%cl
-  800e6f:	d3 ee                	shr    %cl,%esi
-  800e71:	09 d6                	or     %edx,%esi
+  800f00:	89 f2                	mov    %esi,%edx
+  800f02:	89 f9                	mov    %edi,%ecx
+  800f04:	d3 e2                	shl    %cl,%edx
+  800f06:	8b 75 f0             	mov    -0x10(%ebp),%esi
+  800f09:	88 c1                	mov    %al,%cl
+  800f0b:	d3 ee                	shr    %cl,%esi
+  800f0d:	09 d6                	or     %edx,%esi
 	      n0 = n0 << bm;
 
 	      udiv_qrnnd (q0, n1, n2, n1, d1);
-  800e73:	8b 4d e8             	mov    -0x18(%ebp),%ecx
-  800e76:	89 f0                	mov    %esi,%eax
-  800e78:	89 ca                	mov    %ecx,%edx
-  800e7a:	f7 75 ec             	divl   -0x14(%ebp)
-  800e7d:	89 d1                	mov    %edx,%ecx
-  800e7f:	89 c6                	mov    %eax,%esi
+  800f0f:	8b 4d e8             	mov    -0x18(%ebp),%ecx
+  800f12:	89 f0                	mov    %esi,%eax
+  800f14:	89 ca                	mov    %ecx,%edx
+  800f16:	f7 75 ec             	divl   -0x14(%ebp)
+  800f19:	89 d1                	mov    %edx,%ecx
+  800f1b:	89 c6                	mov    %eax,%esi
 	      umul_ppmm (m1, m0, q0, d0);
-  800e81:	f7 65 f4             	mull   -0xc(%ebp)
+  800f1d:	f7 65 f4             	mull   -0xc(%ebp)
 
 	      if (m1 > n1 || (m1 == n1 && m0 > n0))
-  800e84:	39 d1                	cmp    %edx,%ecx
-  800e86:	72 28                	jb     800eb0 <__udivdi3+0x110>
-  800e88:	74 1a                	je     800ea4 <__udivdi3+0x104>
-  800e8a:	89 f7                	mov    %esi,%edi
-  800e8c:	31 f6                	xor    %esi,%esi
-  800e8e:	eb 80                	jmp    800e10 <__udivdi3+0x70>
+  800f20:	39 d1                	cmp    %edx,%ecx
+  800f22:	72 28                	jb     800f4c <__udivdi3+0x110>
+  800f24:	74 1a                	je     800f40 <__udivdi3+0x104>
+  800f26:	89 f7                	mov    %esi,%edi
+  800f28:	31 f6                	xor    %esi,%esi
+  800f2a:	eb 80                	jmp    800eac <__udivdi3+0x70>
 	      /* The condition on the next line takes advantage of that
 		 n1 >= d1 (true due to program flow).  */
 	      if (n1 > d1 || n0 >= d0)
 		{
 		  q0 = 1;
 		  sub_ddmmss (n1, n0, n1, n0, d1, d0);
-  800e90:	31 f6                	xor    %esi,%esi
-  800e92:	bf 01 00 00 00       	mov    $0x1,%edi
+  800f2c:	31 f6                	xor    %esi,%esi
+  800f2e:	bf 01 00 00 00       	mov    $0x1,%edi
 		}
 	    }
 	}
     }
 
   const DWunion ww = {{.low = q0, .high = q1}};
-  800e97:	89 f8                	mov    %edi,%eax
-  800e99:	89 f2                	mov    %esi,%edx
+  800f33:	89 f8                	mov    %edi,%eax
+  800f35:	89 f2                	mov    %esi,%edx
 #ifdef L_udivdi3
 UDWtype
 __udivdi3 (UDWtype n, UDWtype d)
 {
   return __udivmoddi4 (n, d, (UDWtype *) 0);
 }
-  800e9b:	83 c4 10             	add    $0x10,%esp
-  800e9e:	5e                   	pop    %esi
-  800e9f:	5f                   	pop    %edi
-  800ea0:	c9                   	leave  
-  800ea1:	c3                   	ret    
-  800ea2:	66 90                	xchg   %ax,%ax
+  800f37:	83 c4 10             	add    $0x10,%esp
+  800f3a:	5e                   	pop    %esi
+  800f3b:	5f                   	pop    %edi
+  800f3c:	c9                   	leave  
+  800f3d:	c3                   	ret    
+  800f3e:	66 90                	xchg   %ax,%ax
 
 	      d1 = (d1 << bm) | (d0 >> b);
 	      d0 = d0 << bm;
 	      n2 = n1 >> b;
 	      n1 = (n1 << bm) | (n0 >> b);
 	      n0 = n0 << bm;
-  800ea4:	8b 55 f0             	mov    -0x10(%ebp),%edx
-  800ea7:	89 f9                	mov    %edi,%ecx
-  800ea9:	d3 e2                	shl    %cl,%edx
+  800f40:	8b 55 f0             	mov    -0x10(%ebp),%edx
+  800f43:	89 f9                	mov    %edi,%ecx
+  800f45:	d3 e2                	shl    %cl,%edx
 
 	      udiv_qrnnd (q0, n1, n2, n1, d1);
 	      umul_ppmm (m1, m0, q0, d0);
 
 	      if (m1 > n1 || (m1 == n1 && m0 > n0))
-  800eab:	39 c2                	cmp    %eax,%edx
-  800ead:	73 db                	jae    800e8a <__udivdi3+0xea>
-  800eaf:	90                   	nop
+  800f47:	39 c2                	cmp    %eax,%edx
+  800f49:	73 db                	jae    800f26 <__udivdi3+0xea>
+  800f4b:	90                   	nop
 		{
 		  q0--;
-  800eb0:	8d 7e ff             	lea    -0x1(%esi),%edi
+  800f4c:	8d 7e ff             	lea    -0x1(%esi),%edi
 		  sub_ddmmss (m1, m0, m1, m0, d1, d0);
-  800eb3:	31 f6                	xor    %esi,%esi
-  800eb5:	e9 56 ff ff ff       	jmp    800e10 <__udivdi3+0x70>
+  800f4f:	31 f6                	xor    %esi,%esi
+  800f51:	e9 56 ff ff ff       	jmp    800eac <__udivdi3+0x70>
 	...
 
-00800ebc <__umoddi3>:
+00800f58 <__umoddi3>:
 #endif
 
 #ifdef L_umoddi3
 UDWtype
 __umoddi3 (UDWtype u, UDWtype v)
 {
-  800ebc:	55                   	push   %ebp
-  800ebd:	89 e5                	mov    %esp,%ebp
-  800ebf:	57                   	push   %edi
-  800ec0:	56                   	push   %esi
-  800ec1:	83 ec 20             	sub    $0x20,%esp
-  800ec4:	8b 45 08             	mov    0x8(%ebp),%eax
-  800ec7:	8b 4d 10             	mov    0x10(%ebp),%ecx
+  800f58:	55                   	push   %ebp
+  800f59:	89 e5                	mov    %esp,%ebp
+  800f5b:	57                   	push   %edi
+  800f5c:	56                   	push   %esi
+  800f5d:	83 ec 20             	sub    $0x20,%esp
+  800f60:	8b 45 08             	mov    0x8(%ebp),%eax
+  800f63:	8b 4d 10             	mov    0x10(%ebp),%ecx
 static inline __attribute__ ((__always_inline__))
 #endif
 UDWtype
 __udivmoddi4 (UDWtype n, UDWtype d, UDWtype *rp)
 {
   const DWunion nn = {.ll = n};
-  800eca:	89 45 e8             	mov    %eax,-0x18(%ebp)
-  800ecd:	8b 75 0c             	mov    0xc(%ebp),%esi
+  800f66:	89 45 e8             	mov    %eax,-0x18(%ebp)
+  800f69:	8b 75 0c             	mov    0xc(%ebp),%esi
   const DWunion dd = {.ll = d};
-  800ed0:	89 4d f4             	mov    %ecx,-0xc(%ebp)
-  800ed3:	8b 7d 14             	mov    0x14(%ebp),%edi
+  800f6c:	89 4d f4             	mov    %ecx,-0xc(%ebp)
+  800f6f:	8b 7d 14             	mov    0x14(%ebp),%edi
   UWtype q0, q1;
   UWtype b, bm;
 
   d0 = dd.s.low;
   d1 = dd.s.high;
   n0 = nn.s.low;
-  800ed6:	89 45 f0             	mov    %eax,-0x10(%ebp)
+  800f72:	89 45 f0             	mov    %eax,-0x10(%ebp)
   n1 = nn.s.high;
-  800ed9:	89 f2                	mov    %esi,%edx
+  800f75:	89 f2                	mov    %esi,%edx
 
 #if !UDIV_NEEDS_NORMALIZATION
   if (d1 == 0)
-  800edb:	85 ff                	test   %edi,%edi
-  800edd:	75 15                	jne    800ef4 <__umoddi3+0x38>
+  800f77:	85 ff                	test   %edi,%edi
+  800f79:	75 15                	jne    800f90 <__umoddi3+0x38>
     {
       if (d0 > n1)
-  800edf:	39 f1                	cmp    %esi,%ecx
-  800ee1:	0f 86 99 00 00 00    	jbe    800f80 <__umoddi3+0xc4>
+  800f7b:	39 f1                	cmp    %esi,%ecx
+  800f7d:	0f 86 99 00 00 00    	jbe    80101c <__umoddi3+0xc4>
 	{
 	  /* 0q = nn / 0D */
 
 	  udiv_qrnnd (q0, n0, n1, n0, d0);
-  800ee7:	f7 f1                	div    %ecx
+  800f83:	f7 f1                	div    %ecx
 
       if (rp != 0)
 	{
 	  rr.s.low = n0;
 	  rr.s.high = 0;
 	  *rp = rr.ll;
-  800ee9:	89 d0                	mov    %edx,%eax
-  800eeb:	31 d2                	xor    %edx,%edx
+  800f85:	89 d0                	mov    %edx,%eax
+  800f87:	31 d2                	xor    %edx,%edx
   UDWtype w;
 
   (void) __udivmoddi4 (u, v, &w);
 
   return w;
 }
-  800eed:	83 c4 20             	add    $0x20,%esp
-  800ef0:	5e                   	pop    %esi
-  800ef1:	5f                   	pop    %edi
-  800ef2:	c9                   	leave  
-  800ef3:	c3                   	ret    
+  800f89:	83 c4 20             	add    $0x20,%esp
+  800f8c:	5e                   	pop    %esi
+  800f8d:	5f                   	pop    %edi
+  800f8e:	c9                   	leave  
+  800f8f:	c3                   	ret    
     }
 #endif /* UDIV_NEEDS_NORMALIZATION */
 
   else
     {
       if (d1 > n1)
-  800ef4:	39 f7                	cmp    %esi,%edi
-  800ef6:	0f 87 a4 00 00 00    	ja     800fa0 <__umoddi3+0xe4>
+  800f90:	39 f7                	cmp    %esi,%edi
+  800f92:	0f 87 a4 00 00 00    	ja     80103c <__umoddi3+0xe4>
 	}
       else
 	{
 	  /* 0q = NN / dd */
 
 	  count_leading_zeros (bm, d1);
-  800efc:	0f bd c7             	bsr    %edi,%eax
+  800f98:	0f bd c7             	bsr    %edi,%eax
 	  if (bm == 0)
-  800eff:	83 f0 1f             	xor    $0x1f,%eax
-  800f02:	89 45 ec             	mov    %eax,-0x14(%ebp)
-  800f05:	0f 84 a1 00 00 00    	je     800fac <__umoddi3+0xf0>
+  800f9b:	83 f0 1f             	xor    $0x1f,%eax
+  800f9e:	89 45 ec             	mov    %eax,-0x14(%ebp)
+  800fa1:	0f 84 a1 00 00 00    	je     801048 <__umoddi3+0xf0>
 	      UWtype m1, m0;
 	      /* Normalize.  */
 
 	      b = W_TYPE_SIZE - bm;
 
 	      d1 = (d1 << bm) | (d0 >> b);
-  800f0b:	89 f8                	mov    %edi,%eax
-  800f0d:	8a 4d ec             	mov    -0x14(%ebp),%cl
-  800f10:	d3 e0                	shl    %cl,%eax
+  800fa7:	89 f8                	mov    %edi,%eax
+  800fa9:	8a 4d ec             	mov    -0x14(%ebp),%cl
+  800fac:	d3 e0                	shl    %cl,%eax
 	  else
 	    {
 	      UWtype m1, m0;
 	      /* Normalize.  */
 
 	      b = W_TYPE_SIZE - bm;
-  800f12:	bf 20 00 00 00       	mov    $0x20,%edi
-  800f17:	2b 7d ec             	sub    -0x14(%ebp),%edi
+  800fae:	bf 20 00 00 00       	mov    $0x20,%edi
+  800fb3:	2b 7d ec             	sub    -0x14(%ebp),%edi
 
 	      d1 = (d1 << bm) | (d0 >> b);
-  800f1a:	8b 55 f4             	mov    -0xc(%ebp),%edx
-  800f1d:	89 f9                	mov    %edi,%ecx
-  800f1f:	d3 ea                	shr    %cl,%edx
-  800f21:	09 c2                	or     %eax,%edx
-  800f23:	89 55 f0             	mov    %edx,-0x10(%ebp)
+  800fb6:	8b 55 f4             	mov    -0xc(%ebp),%edx
+  800fb9:	89 f9                	mov    %edi,%ecx
+  800fbb:	d3 ea                	shr    %cl,%edx
+  800fbd:	09 c2                	or     %eax,%edx
+  800fbf:	89 55 f0             	mov    %edx,-0x10(%ebp)
 	      d0 = d0 << bm;
-  800f26:	8b 45 f4             	mov    -0xc(%ebp),%eax
-  800f29:	8a 4d ec             	mov    -0x14(%ebp),%cl
-  800f2c:	d3 e0                	shl    %cl,%eax
-  800f2e:	89 45 f4             	mov    %eax,-0xc(%ebp)
+  800fc2:	8b 45 f4             	mov    -0xc(%ebp),%eax
+  800fc5:	8a 4d ec             	mov    -0x14(%ebp),%cl
+  800fc8:	d3 e0                	shl    %cl,%eax
+  800fca:	89 45 f4             	mov    %eax,-0xc(%ebp)
 	      n2 = n1 >> b;
 	      n1 = (n1 << bm) | (n0 >> b);
-  800f31:	89 f2                	mov    %esi,%edx
-  800f33:	d3 e2                	shl    %cl,%edx
+  800fcd:	89 f2                	mov    %esi,%edx
+  800fcf:	d3 e2                	shl    %cl,%edx
 	      n0 = n0 << bm;
-  800f35:	8b 45 e8             	mov    -0x18(%ebp),%eax
-  800f38:	d3 e0                	shl    %cl,%eax
-  800f3a:	89 45 e4             	mov    %eax,-0x1c(%ebp)
+  800fd1:	8b 45 e8             	mov    -0x18(%ebp),%eax
+  800fd4:	d3 e0                	shl    %cl,%eax
+  800fd6:	89 45 e4             	mov    %eax,-0x1c(%ebp)
 	      b = W_TYPE_SIZE - bm;
 
 	      d1 = (d1 << bm) | (d0 >> b);
 	      d0 = d0 << bm;
 	      n2 = n1 >> b;
 	      n1 = (n1 << bm) | (n0 >> b);
-  800f3d:	8b 45 e8             	mov    -0x18(%ebp),%eax
-  800f40:	89 f9                	mov    %edi,%ecx
-  800f42:	d3 e8                	shr    %cl,%eax
-  800f44:	09 d0                	or     %edx,%eax
+  800fd9:	8b 45 e8             	mov    -0x18(%ebp),%eax
+  800fdc:	89 f9                	mov    %edi,%ecx
+  800fde:	d3 e8                	shr    %cl,%eax
+  800fe0:	09 d0                	or     %edx,%eax
 
 	      b = W_TYPE_SIZE - bm;
 
 	      d1 = (d1 << bm) | (d0 >> b);
 	      d0 = d0 << bm;
 	      n2 = n1 >> b;
-  800f46:	d3 ee                	shr    %cl,%esi
+  800fe2:	d3 ee                	shr    %cl,%esi
 	      n1 = (n1 << bm) | (n0 >> b);
 	      n0 = n0 << bm;
 
 	      udiv_qrnnd (q0, n1, n2, n1, d1);
-  800f48:	89 f2                	mov    %esi,%edx
-  800f4a:	f7 75 f0             	divl   -0x10(%ebp)
-  800f4d:	89 d6                	mov    %edx,%esi
+  800fe4:	89 f2                	mov    %esi,%edx
+  800fe6:	f7 75 f0             	divl   -0x10(%ebp)
+  800fe9:	89 d6                	mov    %edx,%esi
 	      umul_ppmm (m1, m0, q0, d0);
-  800f4f:	f7 65 f4             	mull   -0xc(%ebp)
-  800f52:	89 55 e8             	mov    %edx,-0x18(%ebp)
-  800f55:	89 c1                	mov    %eax,%ecx
+  800feb:	f7 65 f4             	mull   -0xc(%ebp)
+  800fee:	89 55 e8             	mov    %edx,-0x18(%ebp)
+  800ff1:	89 c1                	mov    %eax,%ecx
 
 	      if (m1 > n1 || (m1 == n1 && m0 > n0))
-  800f57:	39 d6                	cmp    %edx,%esi
-  800f59:	72 71                	jb     800fcc <__umoddi3+0x110>
-  800f5b:	74 7f                	je     800fdc <__umoddi3+0x120>
+  800ff3:	39 d6                	cmp    %edx,%esi
+  800ff5:	72 71                	jb     801068 <__umoddi3+0x110>
+  800ff7:	74 7f                	je     801078 <__umoddi3+0x120>
 	      q1 = 0;
 
 	      /* Remainder in (n1n0 - m1m0) >> bm.  */
 	      if (rp != 0)
 		{
 		  sub_ddmmss (n1, n0, n1, n0, m1, m0);
-  800f5d:	8b 45 e4             	mov    -0x1c(%ebp),%eax
-  800f60:	29 c8                	sub    %ecx,%eax
-  800f62:	19 d6                	sbb    %edx,%esi
+  800ff9:	8b 45 e4             	mov    -0x1c(%ebp),%eax
+  800ffc:	29 c8                	sub    %ecx,%eax
+  800ffe:	19 d6                	sbb    %edx,%esi
 		  rr.s.low = (n1 << b) | (n0 >> bm);
-  800f64:	8a 4d ec             	mov    -0x14(%ebp),%cl
-  800f67:	d3 e8                	shr    %cl,%eax
-  800f69:	89 f2                	mov    %esi,%edx
-  800f6b:	89 f9                	mov    %edi,%ecx
-  800f6d:	d3 e2                	shl    %cl,%edx
+  801000:	8a 4d ec             	mov    -0x14(%ebp),%cl
+  801003:	d3 e8                	shr    %cl,%eax
+  801005:	89 f2                	mov    %esi,%edx
+  801007:	89 f9                	mov    %edi,%ecx
+  801009:	d3 e2                	shl    %cl,%edx
 		  rr.s.high = n1 >> bm;
 		  *rp = rr.ll;
-  800f6f:	09 d0                	or     %edx,%eax
-  800f71:	89 f2                	mov    %esi,%edx
-  800f73:	8a 4d ec             	mov    -0x14(%ebp),%cl
-  800f76:	d3 ea                	shr    %cl,%edx
+  80100b:	09 d0                	or     %edx,%eax
+  80100d:	89 f2                	mov    %esi,%edx
+  80100f:	8a 4d ec             	mov    -0x14(%ebp),%cl
+  801012:	d3 ea                	shr    %cl,%edx
   UDWtype w;
 
   (void) __udivmoddi4 (u, v, &w);
 
   return w;
 }
-  800f78:	83 c4 20             	add    $0x20,%esp
-  800f7b:	5e                   	pop    %esi
-  800f7c:	5f                   	pop    %edi
-  800f7d:	c9                   	leave  
-  800f7e:	c3                   	ret    
-  800f7f:	90                   	nop
+  801014:	83 c4 20             	add    $0x20,%esp
+  801017:	5e                   	pop    %esi
+  801018:	5f                   	pop    %edi
+  801019:	c9                   	leave  
+  80101a:	c3                   	ret    
+  80101b:	90                   	nop
 	}
       else
 	{
 	  /* qq = NN / 0d */
 
 	  if (d0 == 0)
-  800f80:	85 c9                	test   %ecx,%ecx
-  800f82:	75 0b                	jne    800f8f <__umoddi3+0xd3>
+  80101c:	85 c9                	test   %ecx,%ecx
+  80101e:	75 0b                	jne    80102b <__umoddi3+0xd3>
 	    d0 = 1 / d0;	/* Divide intentionally by zero.  */
-  800f84:	b8 01 00 00 00       	mov    $0x1,%eax
-  800f89:	31 d2                	xor    %edx,%edx
-  800f8b:	f7 f1                	div    %ecx
-  800f8d:	89 c1                	mov    %eax,%ecx
+  801020:	b8 01 00 00 00       	mov    $0x1,%eax
+  801025:	31 d2                	xor    %edx,%edx
+  801027:	f7 f1                	div    %ecx
+  801029:	89 c1                	mov    %eax,%ecx
 
 	  udiv_qrnnd (q1, n1, 0, n1, d0);
-  800f8f:	89 f0                	mov    %esi,%eax
-  800f91:	31 d2                	xor    %edx,%edx
-  800f93:	f7 f1                	div    %ecx
+  80102b:	89 f0                	mov    %esi,%eax
+  80102d:	31 d2                	xor    %edx,%edx
+  80102f:	f7 f1                	div    %ecx
 	  udiv_qrnnd (q0, n0, n1, n0, d0);
-  800f95:	8b 45 f0             	mov    -0x10(%ebp),%eax
-  800f98:	f7 f1                	div    %ecx
-  800f9a:	e9 4a ff ff ff       	jmp    800ee9 <__umoddi3+0x2d>
-  800f9f:	90                   	nop
+  801031:	8b 45 f0             	mov    -0x10(%ebp),%eax
+  801034:	f7 f1                	div    %ecx
+  801036:	e9 4a ff ff ff       	jmp    800f85 <__umoddi3+0x2d>
+  80103b:	90                   	nop
 	  /* Remainder in n1n0.  */
 	  if (rp != 0)
 	    {
 	      rr.s.low = n0;
 	      rr.s.high = n1;
 	      *rp = rr.ll;
-  800fa0:	89 f2                	mov    %esi,%edx
+  80103c:	89 f2                	mov    %esi,%edx
   UDWtype w;
 
   (void) __udivmoddi4 (u, v, &w);
 
   return w;
 }
-  800fa2:	83 c4 20             	add    $0x20,%esp
-  800fa5:	5e                   	pop    %esi
-  800fa6:	5f                   	pop    %edi
-  800fa7:	c9                   	leave  
-  800fa8:	c3                   	ret    
-  800fa9:	8d 76 00             	lea    0x0(%esi),%esi
+  80103e:	83 c4 20             	add    $0x20,%esp
+  801041:	5e                   	pop    %esi
+  801042:	5f                   	pop    %edi
+  801043:	c9                   	leave  
+  801044:	c3                   	ret    
+  801045:	8d 76 00             	lea    0x0(%esi),%esi
 
 		 This special case is necessary, not an optimization.  */
 
 	      /* The condition on the next line takes advantage of that
 		 n1 >= d1 (true due to program flow).  */
 	      if (n1 > d1 || n0 >= d0)
-  800fac:	39 f7                	cmp    %esi,%edi
-  800fae:	72 05                	jb     800fb5 <__umoddi3+0xf9>
-  800fb0:	3b 4d f0             	cmp    -0x10(%ebp),%ecx
-  800fb3:	77 0c                	ja     800fc1 <__umoddi3+0x105>
+  801048:	39 f7                	cmp    %esi,%edi
+  80104a:	72 05                	jb     801051 <__umoddi3+0xf9>
+  80104c:	3b 4d f0             	cmp    -0x10(%ebp),%ecx
+  80104f:	77 0c                	ja     80105d <__umoddi3+0x105>
 		{
 		  q0 = 1;
 		  sub_ddmmss (n1, n0, n1, n0, d1, d0);
-  800fb5:	89 f2                	mov    %esi,%edx
-  800fb7:	8b 45 f0             	mov    -0x10(%ebp),%eax
-  800fba:	29 c8                	sub    %ecx,%eax
-  800fbc:	19 fa                	sbb    %edi,%edx
-  800fbe:	89 45 f0             	mov    %eax,-0x10(%ebp)
+  801051:	89 f2                	mov    %esi,%edx
+  801053:	8b 45 f0             	mov    -0x10(%ebp),%eax
+  801056:	29 c8                	sub    %ecx,%eax
+  801058:	19 fa                	sbb    %edi,%edx
+  80105a:	89 45 f0             	mov    %eax,-0x10(%ebp)
 
 	      if (rp != 0)
 		{
 		  rr.s.low = n0;
 		  rr.s.high = n1;
 		  *rp = rr.ll;
-  800fc1:	8b 45 f0             	mov    -0x10(%ebp),%eax
+  80105d:	8b 45 f0             	mov    -0x10(%ebp),%eax
   UDWtype w;
 
   (void) __udivmoddi4 (u, v, &w);
 
   return w;
 }
-  800fc4:	83 c4 20             	add    $0x20,%esp
-  800fc7:	5e                   	pop    %esi
-  800fc8:	5f                   	pop    %edi
-  800fc9:	c9                   	leave  
-  800fca:	c3                   	ret    
-  800fcb:	90                   	nop
+  801060:	83 c4 20             	add    $0x20,%esp
+  801063:	5e                   	pop    %esi
+  801064:	5f                   	pop    %edi
+  801065:	c9                   	leave  
+  801066:	c3                   	ret    
+  801067:	90                   	nop
 	      umul_ppmm (m1, m0, q0, d0);
 
 	      if (m1 > n1 || (m1 == n1 && m0 > n0))
 		{
 		  q0--;
 		  sub_ddmmss (m1, m0, m1, m0, d1, d0);
-  800fcc:	8b 55 e8             	mov    -0x18(%ebp),%edx
-  800fcf:	89 c1                	mov    %eax,%ecx
-  800fd1:	2b 4d f4             	sub    -0xc(%ebp),%ecx
-  800fd4:	1b 55 f0             	sbb    -0x10(%ebp),%edx
-  800fd7:	eb 84                	jmp    800f5d <__umoddi3+0xa1>
-  800fd9:	8d 76 00             	lea    0x0(%esi),%esi
+  801068:	8b 55 e8             	mov    -0x18(%ebp),%edx
+  80106b:	89 c1                	mov    %eax,%ecx
+  80106d:	2b 4d f4             	sub    -0xc(%ebp),%ecx
+  801070:	1b 55 f0             	sbb    -0x10(%ebp),%edx
+  801073:	eb 84                	jmp    800ff9 <__umoddi3+0xa1>
+  801075:	8d 76 00             	lea    0x0(%esi),%esi
 	      n0 = n0 << bm;
 
 	      udiv_qrnnd (q0, n1, n2, n1, d1);
 	      umul_ppmm (m1, m0, q0, d0);
 
 	      if (m1 > n1 || (m1 == n1 && m0 > n0))
-  800fdc:	39 45 e4             	cmp    %eax,-0x1c(%ebp)
-  800fdf:	72 eb                	jb     800fcc <__umoddi3+0x110>
-  800fe1:	89 f2                	mov    %esi,%edx
-  800fe3:	e9 75 ff ff ff       	jmp    800f5d <__umoddi3+0xa1>
+  801078:	39 45 e4             	cmp    %eax,-0x1c(%ebp)
+  80107b:	72 eb                	jb     801068 <__umoddi3+0x110>
+  80107d:	89 f2                	mov    %esi,%edx
+  80107f:	e9 75 ff ff ff       	jmp    800ff9 <__umoddi3+0xa1>

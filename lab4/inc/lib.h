@@ -78,7 +78,6 @@ envid_t	fork(void);
 envid_t	sfork(void);	// Challenge!
 
 
-
 /* File open modes */
 #define	O_RDONLY	0x0000		/* open for reading only */
 #define	O_WRONLY	0x0001		/* open for writing only */
