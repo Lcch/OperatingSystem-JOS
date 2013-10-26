@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.1415926-2.4-0.9998 (TeX Live 2012/Debian) (format=xelatex 2013.10.1)  26 OCT 2013 12:02
+This is XeTeX, Version 3.1415926-2.4-0.9998 (TeX Live 2012/Debian) (format=xelatex 2013.10.1)  26 OCT 2013 15:19
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1214,11 +1214,8 @@ LaTeX Info: Redefining \nameref on input line 56.
 \@outlinefile=\write3
 \openout3 = `lab4.out'.
 
-
-
-Package hyperref Warning: Rerun to get /PageLabels entry.
-
 \c@lstlisting=\count294
+
 *geometry* driver: auto-detecting
 *geometry* detected driver: xetex
 *geometry* verbose mode - [ preamble ] result:
@@ -1253,19 +1250,18 @@ Package hyperref Warning: Rerun to get /PageLabels entry.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-
-Package hyperref Warning: old toc file detected, not used; run LaTeX again.
-
-\tf@toc=\write4
-\openout4 = `lab4.toc'.
-
+(./lab4.toc
 (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/se-ascii-print.def
 File: se-ascii-print.def 2011/12/02 v1.10 stringenc: Printable ASCII characters
 
 )
 [1
 
-]
+])
+\tf@toc=\write4
+\openout4 = `lab4.toc'.
+
+ [2]
 Overfull \hbox (20.9921pt too wide) in paragraph at lines 86--87
 []\EU1/SimSun(0)/m/n/10 这 是 是 要 我 们 实 现 一 个 用 于 简 单
  分 配 内 存 空 间 进 行 映 射 的 函 数，| 利 用 以 前 写 �
@@ -1313,22 +1309,25 @@ talicFont={*},BoldItalicFont={*},SlantedFont={*},BoldSlantedFont={*}].
 .................................................
 LaTeX Font Info:    Font shape `EU1/lmtt/bx/n' in size <8> not available
 (Font)              Font shape `EU1/lmtt/b/n' tried instead on input line 88.
- [2] [3] [4] [5]
-[6] [7] [8] [9] [10]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 504.
- [11]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 504.
+ [3] [4] [5] [6]
+[7]
+File: ch2.png Graphic file (type QTm)
+ <use  "ch2.png" > [8] [9] [10] [11] [12] [13] [14] [15] [16] [17] [18]
+[19]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 918.
+ [20]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 918.
  (./lab4.aux)
-Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 504.
-Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 504.
+Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 918.
+Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 918.
  ) 
 Here is how much of TeX's memory you used:
- 24221 strings out of 494003
- 464771 string characters out of 3152809
- 678004 words of memory out of 3000000
- 27145 multiletter control sequences out of 15000+200000
- 7560 words of font info for 53 fonts, out of 3000000 for 9000
+ 24399 strings out of 494003
+ 467133 string characters out of 3152809
+ 694004 words of memory out of 3000000
+ 27312 multiletter control sequences out of 15000+200000
+ 8348 words of font info for 60 fonts, out of 3000000 for 9000
  1144 hyphenation exceptions out of 8191
- 56i,12n,56p,837b,1922s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 56i,12n,56p,837b,1952s stack positions out of 5000i,500n,10000p,200000b,50000s
 
-Output written on lab4.pdf (11 pages).
+Output written on lab4.pdf (20 pages).

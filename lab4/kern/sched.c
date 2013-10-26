@@ -35,12 +35,19 @@ sched_yield(void)
 	} else {
 		now_env = 0;
 	}
+	uint32_t max_priority = 0;
+	int select_env = -1;
 	for (i = 0; i < NENV; i++, now_env = (now_env + 1) % NENV) {
-		if (envs[now_env].env_status == ENV_RUNNABLE) {
+		if (envs[now_env].env_status == ENV_RUNNABLE && (envs[now_env].env_priority > max_priority || select_env == -1)) {
 			//cprintf("I am CPU %d , I am in sched yield, I find ENV %d\n", thiscpu->cpu_id, now_env);
-			env_run(&envs[now_env]);
+			select_env = now_env;
+			max_priority = envs[now_env].env_priority;
 		}
 	}
+	if (select_env >= 0 && (!curenv || curenv->env_status != ENV_RUNNING || max_priority >= curenv->env_priority)) {
+		env_run(&envs[select_env]);
+	}
+
 	if (curenv && curenv->env_status == ENV_RUNNING) {
 		env_run(curenv);
 	}

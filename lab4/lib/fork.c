@@ -114,6 +114,8 @@ duppage(envid_t envid, unsigned pn)
 envid_t
 fork(void)
 {
+	// static int num = 0x100;
+
 	// LAB 4: Your code here.
 	set_pgfault_handler(pgfault);
 	int childpid = sys_exofork();
@@ -146,11 +148,18 @@ fork(void)
 		r = sys_env_set_pgfault_upcall(childpid, _pgfault_upcall);
 		if (r < 0) panic("fork, set pgfault upcall fail : %e\n", r);
 
+		/* LAB 4 Challenge , set childenv's priority
+		num--;
+		if (num == 0) num = 0x100;
+		r = sys_set_priority(childpid, num);
+		if (r < 0) panic("fork, set priority error\n");
+		*/
+
 		// mark the child as runnable and return
 		r = sys_env_set_status(childpid, ENV_RUNNABLE);
 		if (r < 0) panic("fork, set child process to ENV_RUNNABLE error : %e\n", r);
 
-		// cprintf("fork father ok!");
+		// cprintf("fork father ok!")
 		return childpid;
 	}
 

@@ -224,6 +224,120 @@ Question 3: 由于Env在mem\_init中分配了内存进行存储并建立了映�
 Question 4: 保存现场是为了之后CPU进行继续处理这个environment的时候保证不会造成错误。保护现场发生在发生中断的情况下，这时候堆栈上储存了当前environment的信息，之后再通过curenv->env\_tf = *tf来保存在environment中。
 \end{subsection}
 
+\begin{subsection}{Challenge 2}
+\par
+设置一个带有优先级的调度，我实现了一个非常弱智的，每次找到可运行的优先级最高的，如果优先级相同，则优先处理刚处理完的进程号之后最近的一个进程。对于优先级的表示，我在struct Env中设置了一位env\_priority表示优先级，越大表示优先级越高。
+\par
+因此调度就变为了：
+\begin{lstlisting}[language=C]
+void
+sched_yield(void)
+{
+	struct Env *idle;
+
+	int now_env, i;
+	if (curenv) {			// thiscpu->cpu_env
+		now_env = (ENVX(curenv->env_id) + 1) % NENV;
+	} else {
+		now_env = 0;
+	}
+	uint32_t max_priority = 0;
+	int select_env = -1;
+	for (i = 0; i < NENV; i++, now_env = (now_env + 1) % NENV) {
+		if (envs[now_env].env_status == ENV_RUNNABLE && (envs[now_env].env_priority > max_priority || select_env == -1)) {
+			//cprintf("I am CPU %d , I am in sched yield, I find ENV %d\n", thiscpu->cpu_id, now_env);
+			select_env = now_env;
+			max_priority = envs[now_env].env_priority;
+		}
+	}
+	if (select_env >= 0 && (!curenv || curenv->env_status != ENV_RUNNING || max_priority >= curenv->env_priority)) {
+		env_run(&envs[select_env]);
+	}
+	
+	if (curenv && curenv->env_status == ENV_RUNNING) {
+		env_run(curenv);
+	}
+
+	// sched_halt never returns
+	sched_halt();
+}
+\end{lstlisting}
+\par
+为了测试，我首先增加了一个更改priority的系统调用：
+\begin{lstlisting}[language=C]
+static int
+sys_set_priority(envid_t envid, uint32_t new_priority)
+{
+	struct Env * env;
+	int r = envid2env(envid, &env, 1);	
+	if (r < 0) return -E_BAD_ENV;
+	
+	env->env_priority = new_priority;
+	return 0;
+}
+\end{lstlisting}
+\par
+我在用户fork()库函数增加了一个static变量num，使得其递减，并设置刚创建的子进程的priority为num：
+\begin{lstlisting}[language=C]
+envid_t
+fork(void)
+{
+	static int num = 0x100;
+
+	// LAB 4: Your code here.
+	set_pgfault_handler(pgfault);
+	int childpid = sys_exofork();
+	if (childpid < 0) {
+		panic("fork sys_exofork error : %e\n", childpid);
+	}
+	int r;
+
+	if (childpid == 0) {
+		......
+	} else {
+		......
+
+		// LAB 4 Challenge , set childenv's priority
+		num--;
+		if (num == 0) num = 0x100;
+		r = sys_set_priority(childpid, num);
+		if (r < 0) panic("fork, set priority error\n");
+
+		// mark the child as runnable and return
+		r = sys_env_set_status(childpid, ENV_RUNNABLE);
+		if (r < 0) panic("fork, set child process to ENV_RUNNABLE error : %e\n", r);
+		return childpid;
+	}
+}
+\end{lstlisting}
+\par
+这样就可以进行测试了，我把hello.c更改为了下面的代码，根据我们之前的铺垫，预期就是执行完子进程0，才会执行子进程1，才会执行子进程2，才会执行子进程3.
+\begin{lstlisting}[language=C]
+#include <inc/lib.h>
+
+void
+umain(int argc, char **argv)
+{
+	cprintf("hello, world\n");
+	cprintf("i am environment %08x\n", thisenv->env_id);
+
+	int i, child, j;
+	for (i = 0; i != 3; i++) {
+		child = fork();
+		if (child == 0) {
+			for (j = 0; j != 10; j++) {
+				cprintf("hello world from : %d\n", i);
+				sys_yield();
+			}
+			break;
+		}
+	}
+}
+\end{lstlisting}
+\par
+和预期一致！
+\includegraphics[scale=0.5]{ch2.png}
+\end{subsection}
 
 \begin{subsection}{Question 7}
 \begin{subsubsection}{sys\_exofork}
@@ -497,6 +611,306 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
 	_pgfault_handler = handler;
 }
 \end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{ Exercise 12 }
+\par
+这个部分就是要真正实现一个带Copy-on-Write的提供给用户的fork函数了。为了实现Copy-on-Write需要先注册一个pgfault\_handler，这样当某一个进程对某一块共享区域进行写入的时候，就绪要进行内存的复制使得这块内存不共享。然后进行sys\_exofork()，由于此时子进程还处于NOT\_RUNNABLE的状态，父进程需要对子进程构建内存的映射（这里只需要复制0～UTOP中存在的并且是用户的内存条目，对于内核态的数据和代码都是共享的，已经存在于子进程的页表中，无需拷贝），以及创建分配一块exception stack的内存，并设置子进程的pgfault\_handler。当这些都完成了，说明子进程已经可以开始运行了，就可以标记子进程的状态为RUNNABLE了。
+\par
+特别注意当子进程进行执行的时候，需要更新子进程的thisenv号。
+\begin{subsubsection}{ fork }
+\begin{lstlisting}[language = C]
+envid_t
+fork(void)
+{
+	set_pgfault_handler(pgfault);
+	int childpid = sys_exofork();
+	if (childpid < 0) {
+		panic("fork sys_exofork error : %e\n", childpid);
+	}
+	int r;
+
+	if (childpid == 0) {
+		// child process
+		// Remember to fix "thisenv" in the child process. ??? 
+		thisenv = &envs[ENVX(sys_getenvid())];
+		// cprintf("fork child ok\n");
+		return 0;
+	} else {
+		// map page to new environment
+		// kernel page is already in new environment
+		uint32_t i;
+		for (i = 0; i != UTOP; i += PGSIZE) 
+		if ((uvpd[PDX(i)] & PTE_P) && (uvpt[i / PGSIZE] & PTE_P) && (uvpt[i / PGSIZE] & PTE_U)) {
+			duppage(childpid, i / PGSIZE);
+		}
+
+		// allocate exception stack
+		r = sys_page_alloc(childpid, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_W | PTE_P);
+		if (r < 0) panic("fork, sys_page_alloc user exception stack error : %e\n", r);
+
+		// set user environment user page fault handler 
+		extern void _pgfault_upcall(void);
+		r = sys_env_set_pgfault_upcall(childpid, _pgfault_upcall);
+		if (r < 0) panic("fork, set pgfault upcall fail : %e\n", r);
+
+		// mark the child as runnable and return
+		r = sys_env_set_status(childpid, ENV_RUNNABLE);
+		if (r < 0) panic("fork, set child process to ENV_RUNNABLE error : %e\n", r);
+
+		// cprintf("fork father ok!");
+		return childpid;
+	}
+
+	panic("fork not implemented");
+}
+\end{lstlisting}
+\end{subsubsection}
+
+\begin{subsubsection}{ duppage }
+\par
+这部分就是实现页表的复制，需要区分读和写即可。如果是读，则需要更改子进程的同时自己页表的标志位也需要更改。
+\begin{lstlisting}[language = C]
+static int
+duppage(envid_t envid, unsigned pn)
+{
+	// do not dup exception stack
+	if (pn * PGSIZE == UXSTACKTOP - PGSIZE) return 0;
+
+	int r;
+	void * addr = (void *)(pn * PGSIZE);
+	if ((uvpt[pn] & PTE_W) || (uvpt[pn] & PTE_COW)) {
+		// cow
+		r = sys_page_map(0, addr, envid, addr, PTE_COW | PTE_P | PTE_U);
+		if (r < 0) panic("duppage sys_page_map error : %e\n", r);
+		
+		r = sys_page_map(0, addr, 0, addr, PTE_COW | PTE_P | PTE_U);
+		if (r < 0) panic("duppage sys_page_map error : %e\n", r);
+	} else {
+		// read only
+		r = sys_page_map(0, addr, envid, addr, PTE_P | PTE_U);
+		if (r < 0) panic("duppage sys_page_map error : %e\n", r);
+	}
+
+	return 0;
+}
+\end{lstlisting}
+\end{subsubsection}
+
+
+\begin{subsubsection}{ pgfault }
+\par
+这部分就是真正处理Cope-On-Write的地方，就是将共享的内存进行复制即可。这里我出现了一个低级错误，对于utf->utf\_fault\_va我想当然地以为是对齐PGSIZE，实际上并不是，这里花了我挺长时间进行调试的。
+\begin{lstlisting}[language = C]
+static void
+pgfault(struct UTrapframe *utf)
+{
+	void *addr = (void *) utf->utf_fault_va;
+	uint32_t err = utf->utf_err;
+	int r;
+
+	if ((err & FEC_WR) == 0)
+		panic("pgfault, the fault is not a write\n");
+
+	uint32_t uaddr = (uint32_t) addr;
+	if ((uvpd[PDX(addr)] & PTE_P) == 0 || (uvpt[uaddr / PGSIZE] & PTE_COW) == 0) {
+		panic("pgfault, not a copy-on-write page\n");
+	}
+
+	// static int sys_page_alloc(envid_t envid, void *va, int perm)
+	r = sys_page_alloc(0, (void *)PFTEMP, PTE_W | PTE_U | PTE_P);
+	if (r < 0) panic("pgfault, sys_page_alloc error : %e\n", r);
+
+	// Oh my god, I forget this at the first, it waste me a lot of time to debug!!!
+	addr = ROUNDDOWN(addr, PGSIZE);
+	
+	memcpy(PFTEMP, addr, PGSIZE);
+	
+	r = sys_page_map(0, PFTEMP, 0, addr, PTE_W | PTE_U | PTE_P);
+	if (r < 0) panic("pgfault, sys_page_map error : %e\n", r);
+
+	return;
+}
+\end{lstlisting}
+\end{subsubsection}
+\par
+运行lib/fork.c，效果和给定的一致。这样PartB就结束了。
+\end{subsection}
+
+\end{section}
+
+\begin{section}{ Part C: IPC }
+
+\begin{subsection}{ Exercise 13 }
+\par
+这部分是设置外部中断，注意要修改eflags寄存器的FL\_IF位，来接受外部中断。这部分和Lab3几乎一样。
+\begin{lstlisting}[language = C]
+// in trapentry.S add :
+ 	TRAPHANDLER_NOEC(vec32, IRQ_OFFSET + IRQ_TIMER)
+ 	TRAPHANDLER_NOEC(vec33, IRQ_OFFSET + IRQ_KBD)
+ 	TRAPHANDLER_NOEC(vec36, IRQ_OFFSET + IRQ_SERIAL)
+ 	TRAPHANDLER_NOEC(vec39, IRQ_OFFSET + IRQ_SPURIOUS)
+ 	TRAPHANDLER_NOEC(vec46, IRQ_OFFSET + IRQ_IDE)
+ 	TRAPHANDLER_NOEC(vec51, IRQ_OFFSET + IRQ_ERROR)
+ 	
+// in trap_init add :
+    SETGATE(idt[IRQ_OFFSET + IRQ_TIMER], 0, GD_KT, vec32, 0);
+    SETGATE(idt[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, vec33, 0);
+    SETGATE(idt[IRQ_OFFSET + IRQ_SERIAL], 0, GD_KT, vec36, 0);
+    SETGATE(idt[IRQ_OFFSET + IRQ_SPURIOUS], 0, GD_KT, vec39, 0);
+    SETGATE(idt[IRQ_OFFSET + IRQ_IDE], 0, GD_KT, vec46, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_ERROR], 0, GD_KT, vec51, 0);
+
+// 	in env_alloc add :
+	e->env_tf.tf_eflags |= FL_IF;
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{ Exercise 14 }
+\par
+这部分是处理时钟中断，实现Time-Sharing。lab已经帮我实现好细节了，我们只需要在trap.c中遇到时钟中断调用相应函数即可：
+\begin{lstlisting}[language = C]
+if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER) {
+	lapic_eoi();
+	sched_yield();
+	return;
+}
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{ Exercise 15 }
+\par
+这部分我们提供两个系统调用来实现进程间的通信，程序注释说的非常详细，一步一步做即可。
+
+\begin{subsection}{ sys\_ipc\_recv }
+\begin{lstlisting}[language = C]
+static int
+sys_ipc_recv(void *dstva)
+{
+	// cprintf("I am receiving???\n");
+	// LAB 4: Your code here.
+	if (((uint32_t)dstva < UTOP) && ROUNDUP(dstva, PGSIZE) != dstva) return -E_INVAL;
+	curenv->env_ipc_recving = true;			// Env is blocked receiving
+	curenv->env_ipc_dstva = dstva;			// VA at which to map received page
+	curenv->env_ipc_from = 0;				// set from to 0
+	curenv->env_status = ENV_NOT_RUNNABLE;	// mark it not runnable
+	// cprintf("I am receiving!!!\n");
+	// cprintf("%d, %d\n", curenv->env_ipc_recving, curenv->env_ipc_from);
+	sched_yield();							// give up the CPU
+
+	return 0;
+}
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{ sys\_try\_send }
+\par
+中间我很不小心填错发消息的envid，导致陷入了无尽的调试之中，花了将近2个小时才找到错误，太伤心了。
+\begin{lstlisting}[language = C]
+static int
+sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
+{
+	struct Env * env;
+	int r = envid2env(envid, &env, 0);	
+	//	-E_BAD_ENV if environment envid doesn't currently exist.
+	if (r < 0) return -E_BAD_ENV;
+
+	//	-E_IPC_NOT_RECV if envid is not currently blocked in sys_ipc_recv,
+	//		or another environment managed to send first.
+	if (env->env_ipc_recving == false || env->env_ipc_from != 0) {
+		return -E_IPC_NOT_RECV;
+	}
+
+	//	-E_INVAL if srcva < UTOP but srcva is not page-aligned.
+	if ((uint32_t)srcva < UTOP && ROUNDUP(srcva, PGSIZE) != srcva)
+		return -E_INVAL;
+
+	//	-E_INVAL if srcva < UTOP and perm is inappropriate
+	if ((uint32_t)srcva < UTOP && (!((perm & PTE_U) && (perm & PTE_P) && (perm & (~PTE_SYSCALL))==0))) 
+		return -E_INVAL;
+
+	//	-E_INVAL if srcva < UTOP but srcva is not mapped in the caller's address space 
+	pte_t * pte;
+	struct PageInfo * pg = page_lookup(curenv->env_pgdir, srcva, &pte);
+	if ((uint32_t)srcva < UTOP && pg == NULL)
+		return -E_INVAL;
+
+	//	-E_INVAL if (perm & PTE_W), but srcva is read-only in the
+	//		current environment's address space.
+	if ((perm & PTE_W) && (*pte & PTE_W) == 0) 
+		return -E_INVAL;
+
+	//	-E_NO_MEM if there's not enough memory to map srcva in envid's
+	//		address space.
+	if ((uint32_t)srcva < UTOP) {
+		r = page_insert(env->env_pgdir, pg, ROUNDDOWN(srcva, PGSIZE), perm);
+		if (r < 0) return -E_NO_MEM;
+		env->env_ipc_perm = perm;
+	} else env->env_ipc_perm = 0;
+
+	env->env_ipc_recving = false;
+
+	// ... I mistake write env->env_ipc_from = envid in the first
+	// ... Debug a lot of time...
+	env->env_ipc_from = curenv->env_id;
+	env->env_ipc_value = value;
+	env->env_tf.tf_regs.reg_eax = 0;
+	env->env_status = ENV_RUNNABLE;
+
+	return 0;
+}
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{ ipc\_recv }
+\begin{lstlisting}[language = C]
+int32_t
+ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
+{
+	// LAB 4: Your code here.
+	int r;
+	if (pg != NULL) {
+		r = sys_ipc_recv(pg);
+	} else {
+		r = sys_ipc_recv((void *)UTOP);
+	}
+
+	if (r == 0) {
+		if (from_env_store != NULL) *from_env_store = thisenv->env_ipc_from;
+		if (perm_store != NULL) *perm_store = thisenv->env_ipc_perm;
+		// cprintf("Receive %d\n", thisenv->env_ipc_value);
+		return thisenv->env_ipc_value;
+	} else {
+		// fails;
+		if (from_env_store != NULL) *from_env_store = 0;
+		if (perm_store != NULL) *perm_store = 0;
+		return r;
+	}
+}
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{ ipc\_send }
+\begin{lstlisting}[language = C]
+void
+ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
+{
+	int r;
+	if (pg == NULL) pg = (void *)UTOP;
+	
+	while ((r = sys_ipc_try_send(to_env, val, pg, perm)) != 0) {
+		if (r == -E_IPC_NOT_RECV) {
+			// cprintf("Try Again and Again....\n");
+			sys_yield();
+		} else {
+			panic("ipc_send error %e\n", r);
+		}
+	}
+	return;
+}
+\end{lstlisting}
+\end{subsection}
+
 \end{subsection}
 
 \end{section}
