@@ -129,7 +129,7 @@ page_init(void)
 
 \begin{subsection}{Question 1}
 \par
-kern/mpentry.S的链接地址在KERNBASE以上，而AP在是在实模式下无法使用页寻址，因此我们需要手动地计算出其所在的物理地址。如果注释了这句，则会产生缺页异常。
+kern/mpentry.S的链接地址在KERNBASE以上，boot aps之前将其代码拷贝至MPENTRY\_PADDR，而MPBOOTPHYS就是用来将高地址的位置进行转化至MPENTRY\_PADDR开始的低地址的，如果注释掉这个宏，则在使用绝对地址的寻址和跳转则会造成Page Fault。
 \end{subsection}
 
 \begin{subsection}{Exercise 3}

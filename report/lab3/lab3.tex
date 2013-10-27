@@ -1,4 +1,4 @@
-\documentclass[GBK,winfonts,a4paper,10pt]{ctexart}
+	\documentclass[GBK,winfonts,a4paper,10pt]{ctexart}
 \usepackage{fancyhdr}
 \usepackage{indentfirst}
 \usepackage{graphics}
@@ -986,14 +986,14 @@ make run-breakpoint，backtrace，造成了page fault，具体如下图：
 \par
 \includegraphics[scale=0.5]{backtrace.png}
 \par
-产生page fault的原因是其尝试访问了0xebfdfd0的位置读取上一个ebp，这个位置不在内核栈上，因此产生了page fault。
+产生page fault的原因是其尝试访问了超过0xeebfe000的内存，这段内存是不属于用户栈上的，因此产生了Page Fault。
 \par
-为什么是0xebfdfd0呢？从env.c中的env\_alloc可知，初始设置栈为esp = USTACKTOP，这个位置是用户进程的栈空间的位置，这一段在内核中是没有映射的，所以当运行进程时，ebp保留的是用户进程的栈空间，因此当kernel尝试访问的时候就会造成page fault。	
+在哪里超过的0xeebfe000，由于libmain已经处于USTACKTOP的位置，其两个参数就处于USTACKTOP的开头8个字节，而backtrace输出5个产生，因此在输出第3个参数的时候就访问到了用户栈外的内存空间，造成了Page fault。
 \end{subsection}
 
 \begin{subsection}{ Exercise 10 }
 \par
-似乎什么都没写就直接通过了。。通过看evilhello的其内核段写数据，我们确实在上面已经处理过了这种非法访问了。
+似乎什么都没写就直接通过了。。通过看evilhello的代码，发现其向内核段写数据，我们确实在上面已经处理过了这种非法访问了。
 \end{subsection}
 
 

@@ -9,18 +9,18 @@
 \contentsline {subsection}{\numberline {1.8}Exercise 6}{5}{subsection.1.8}
 \contentsline {subsection}{\numberline {1.9}Question 3-4}{5}{subsection.1.9}
 \contentsline {subsection}{\numberline {1.10}Challenge 2}{6}{subsection.1.10}
-\contentsline {subsection}{\numberline {1.11}Question 7}{8}{subsection.1.11}
-\contentsline {subsubsection}{\numberline {1.11.1}sys\_exofork}{8}{subsubsection.1.11.1}
+\contentsline {subsection}{\numberline {1.11}Question 7}{9}{subsection.1.11}
+\contentsline {subsubsection}{\numberline {1.11.1}sys\_exofork}{9}{subsubsection.1.11.1}
 \contentsline {subsubsection}{\numberline {1.11.2}sys\_env\_set\_status}{9}{subsubsection.1.11.2}
 \contentsline {subsubsection}{\numberline {1.11.3}sys\_page\_alloc}{9}{subsubsection.1.11.3}
 \contentsline {subsubsection}{\numberline {1.11.4}sys\_page\_map}{10}{subsubsection.1.11.4}
-\contentsline {subsubsection}{\numberline {1.11.5}sys\_page\_unmap}{10}{subsubsection.1.11.5}
+\contentsline {subsubsection}{\numberline {1.11.5}sys\_page\_unmap}{11}{subsubsection.1.11.5}
 \contentsline {section}{\numberline {2}Part B: Copy-on-Write Fork}{11}{section.2}
-\contentsline {subsection}{\numberline {2.1}Exercise 8}{11}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.1}Exercise 8}{12}{subsection.2.1}
 \contentsline {subsection}{\numberline {2.2}Exercise 9}{12}{subsection.2.2}
 \contentsline {subsection}{\numberline {2.3}Exercise 10}{13}{subsection.2.3}
 \contentsline {subsection}{\numberline {2.4}Exercise 11}{14}{subsection.2.4}
-\contentsline {subsection}{\numberline {2.5} Exercise 12 }{14}{subsection.2.5}
+\contentsline {subsection}{\numberline {2.5} Exercise 12 }{15}{subsection.2.5}
 \contentsline {subsubsection}{\numberline {2.5.1} fork }{15}{subsubsection.2.5.1}
 \contentsline {subsubsection}{\numberline {2.5.2} duppage }{16}{subsubsection.2.5.2}
 \contentsline {subsubsection}{\numberline {2.5.3} pgfault }{16}{subsubsection.2.5.3}
@@ -30,5 +30,5 @@
 \contentsline {subsection}{\numberline {3.3} Exercise 15 }{18}{subsection.3.3}
 \contentsline {subsection}{\numberline {3.4} sys\_ipc\_recv }{18}{subsection.3.4}
 \contentsline {subsection}{\numberline {3.5} sys\_try\_send }{18}{subsection.3.5}
-\contentsline {subsection}{\numberline {3.6} ipc\_recv }{19}{subsection.3.6}
+\contentsline {subsection}{\numberline {3.6} ipc\_recv }{20}{subsection.3.6}
 \contentsline {subsection}{\numberline {3.7} ipc\_send }{20}{subsection.3.7}

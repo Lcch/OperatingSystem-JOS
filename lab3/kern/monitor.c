@@ -75,10 +75,11 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 
     // in entry.S show the top ebp = 0
     for (; ebp != 0; ebp = (uint32_t*)(*ebp)) {
+        cprintf("!!!!\n");
         eip = *(ebp + 1);
+        cprintf("0x%08x\n", (uint32_t)ebp);
         // arg[i] = *(ebp + 2 + i);
         cprintf("  ebp %08x  eip %08x  args %08x %08x %08x %08x %08x\n", ebp, eip, *(ebp+2), *(ebp+3), *(ebp+4), *(ebp+5), *(ebp+6)); 
-        
         debuginfo_eip(*(ebp + 1), &eip_debug_info);
         cprintf("        %s:%d: ", eip_debug_info.eip_file, eip_debug_info.eip_line);
         cprintf("%.*s", eip_debug_info.eip_fn_namelen, eip_debug_info.eip_fn_name);
