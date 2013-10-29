@@ -1,0 +1,137 @@
+\documentclass[GBK,winfonts,a4paper,10pt]{ctexart}
+\usepackage{fancyhdr}
+\usepackage{indentfirst}
+\usepackage{graphics}
+\usepackage{enumerate}
+\usepackage{framed}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{mdwlist}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{marvosym,listings,etoolbox}
+\usepackage{geometry}
+
+\lstset{numbers=left, numberstyle=\small, keywordstyle=\color{blue!70}, commentstyle=\color{red!50!green!50!blue!50}, frame=shadowbox, rulesepcolor=\color{red!20!green!20!blue!20},escapeinside=``, xleftmargin=2em,xrightmargin=2em, aboveskip=1em, literate={@}{\MVAt}1}
+
+\patchcmd{\verb}{\dospecials}{\dospecials\atspecial}{}{}
+\def\atspecial{\begingroup\lccode`~=`@
+  \lowercase{\endgroup\let~}\MVAt
+  \catcode`@=\active}
+  
+
+
+\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}%
+       
+\lstdefinestyle{customc}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  frame=single,
+  xleftmargin=\parindent,
+  language=C,
+  showstringspaces=false,
+  basicstyle=\fontsize{8pt}{8pt}\ttfamily,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  identifierstyle=\color{blue},
+  stringstyle=\color{orange},
+  tabsize=4,
+  numbers=none,
+  mathescape=false,
+}
+
+\lstset{escapechar=@,style=customc}
+
+\pagestyle{fancy}
+\hypersetup{pdfborder=0 0 0}
+
+\usepackage{clrscode}
+
+\usepackage{latexsym}
+
+\begin{document}
+
+\rhead{}
+\lhead{}
+\cfoot{\thepage}
+\renewcommand{\footrulewidth}{0.4pt}
+%\renewcommand{\thesection}{}
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+\setlength{\tabcolsep}{2pt}
+
+\setlength{\parindent}{2em}
+
+\thispagestyle{fancy}
+
+
+\title{Operating System MIT 6.828 JOS Lab5 Report}
+\author{Computer Science \\ ChenHao(1100012776) }
+\date{\today}
+\maketitle
+
+\thispagestyle{fancy}
+
+\tableofcontents
+
+\newpage
+
+\begin{section}{ Exercise 1 }
+\par
+仅给file system environment I/O权限，如果同时有多个environment享有I/O权限，则会对于中断的分配到对应的user-mode environment造成很大困扰。
+\par
+IOPL有4种特权级，其中0级的特权最高，3级最低，而此处是给予用户进程权限，因此给予FL_IOPL_3。
+\begin{lstlisting}[language=C]
+    if (type == ENV_TYPE_FS)
+        e->env_tf.tf_eflags |= FL_IOPL_3;        
+\end{lstlisting}
+\end{section}
+
+\begin{section}{ Question }
+\par
+e->env_tf会在产生trap时，由硬件以及中断处理程序进行保存，在env_pop_tf()中恢复。
+\end{section}
+
+\begin{section}{ Exercise 2 }
+\par
+本质上这就是一个page fault handler，不同之处在于拷贝信息，一个是从内存中，这个是从硬盘中。
+\begin{lstlisting}[language=C]
+    	addr = ROUNDDOWN(addr, PGSIZE);
+	r = sys_page_alloc(0, addr, PTE_W | PTE_U | PTE_P);
+	if (r < 0) panic("bc_pgfault sys_page_alloc error : %e\n", r);
+
+	r = ide_read(blockno * BLKSECTS, addr, BLKSECTS);
+	if (r < 0) panic("bc_pgfault ide_read error : %e\n", r);       
+\end{lstlisting}
+\end{section}
+
+\begin{section}{ Challenge 1 }
+\end{section}
+
+\begin{section}{ Exercise 3 }
+\end{section}
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

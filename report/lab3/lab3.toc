@@ -25,3 +25,4 @@
 \contentsline {subsection}{\numberline {2.6} Exercise 8 }{22}{subsection.2.6}
 \contentsline {subsection}{\numberline {2.7} Exercise 9 }{22}{subsection.2.7}
 \contentsline {subsection}{\numberline {2.8} Exercise 10 }{24}{subsection.2.8}
+\contentsline {section}{\numberline {3} Something Interesting }{24}{section.3}

@@ -80,10 +80,11 @@
 
 \newpage
 
-\begin{section}{ Part A: User Environments and Exception Handling }
-\par
-lsof -i:xxxx    (xxxx是被占用的端口,得到占用端口的进程的PID)
 
+\par
+完成了所有的Exercise 和 Challenge
+
+\begin{section}{ Part A: User Environments and Exception Handling }
 \begin{subsection}{ Exercise 1 }
 \par
 分配物理内存和创建虚拟内存映射给envc，类似Lab2即可。
@@ -917,7 +918,7 @@ lib/entry.S是为创建的进程的入口，之后会跳转到libmain，之后�
 // in trap.c/page_fault_handler
 
 	// LAB 3: Your code here.
-	if (tf->tf_cs == GD_KT)
+	if ((tf->tf_cs & 3) == 0)
     	panic("page_fault_handler : page fault in kernel\n");
 \end{lstlisting}
 
@@ -996,6 +997,9 @@ make run-breakpoint，backtrace，造成了page fault，具体如下图：
 似乎什么都没写就直接通过了。。通过看evilhello的代码，发现其向内核段写数据，我们确实在上面已经处理过了这种非法访问了。
 \end{subsection}
 
+\end{section}
+
+\begin{section}{ Something Interesting }
 
 \end{section}
 

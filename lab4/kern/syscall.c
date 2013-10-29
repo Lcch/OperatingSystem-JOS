@@ -339,23 +339,24 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 		return -E_INVAL;
 
 	//	-E_INVAL if srcva < UTOP but srcva is not mapped in the caller's address space 
-	pte_t * pte;
-	struct PageInfo * pg = page_lookup(curenv->env_pgdir, srcva, &pte);
-	if ((uint32_t)srcva < UTOP && pg == NULL)
-		return -E_INVAL;
-
-	//	-E_INVAL if (perm & PTE_W), but srcva is read-only in the
-	//		current environment's address space.
-	if ((perm & PTE_W) && (*pte & PTE_W) == 0) 
-		return -E_INVAL;
-
-	//	-E_NO_MEM if there's not enough memory to map srcva in envid's
-	//		address space.
 	if ((uint32_t)srcva < UTOP) {
-		r = page_insert(env->env_pgdir, pg, ROUNDDOWN(srcva, PGSIZE), perm);
-		if (r < 0) return -E_NO_MEM;
-		env->env_ipc_perm = perm;
-	} else env->env_ipc_perm = 0;
+		pte_t * pte;
+		struct PageInfo * pg = page_lookup(curenv->env_pgdir, srcva, &pte);
+		if (pg == NULL) return -E_INVAL;
+
+		//	-E_INVAL if (perm & PTE_W), but srcva is read-only in the
+		//		current environment's address space.
+		if ((perm & PTE_W) && (*pte & PTE_W) == 0) 
+			return -E_INVAL;
+
+		//	-E_NO_MEM if there's not enough memory to map srcva in envid's
+		//		address space.
+		if (env->env_ipc_dstva != NULL) {
+			r = page_insert(env->env_pgdir, pg, env->env_ipc_dstva, perm);
+			if (r < 0) return -E_NO_MEM;
+			env->env_ipc_perm = perm;
+		} else env->env_ipc_perm = 0;	
+	}
 
 	env->env_ipc_recving = false;
 

@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.1415926-2.4-0.9998 (TeX Live 2012/Debian) (format=xelatex 2013.10.1)  27 OCT 2013 13:23
+This is XeTeX, Version 3.1415926-2.4-0.9998 (TeX Live 2012/Debian) (format=xelatex 2013.10.1)  30 OCT 2013 00:40
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1314,17 +1314,17 @@ LaTeX Font Info:    Font shape `EU1/lmtt/bx/n' in size <8> not available
 File: ch2.png Graphic file (type QTm)
  <use  "ch2.png" > [8] [9] [10] [11] [12] [13] [14] [15] [16] [17] [18]
 [19]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 918.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 924.
  [20]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 918.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 924.
  (./lab4.aux)
-Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 918.
-Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 918.
+Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 924.
+Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 924.
  ) 
 Here is how much of TeX's memory you used:
  24399 strings out of 494003
  467133 string characters out of 3152809
- 706004 words of memory out of 3000000
+ 729004 words of memory out of 3000000
  27312 multiletter control sequences out of 15000+200000
  8348 words of font info for 60 fonts, out of 3000000 for 9000
  1144 hyphenation exceptions out of 8191

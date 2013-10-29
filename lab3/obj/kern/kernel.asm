@@ -144,17 +144,18 @@ f01000a6:	e8 90 2e 00 00       	call   f0102f3b <env_init>
     // cprintf("env_init done! \n");
 	trap_init();
 f01000ab:	e8 15 35 00 00       	call   f01035c5 <trap_init>
+    // cprintf("trap_init done! \n");
+
 #if defined(TEST)
 	// Don't touch -- used by grading script!
 	ENV_CREATE(TEST, ENV_TYPE_USER);
-#else
-	// Touch all you want.
-	ENV_CREATE(user_breakpoint, ENV_TYPE_USER);
 f01000b0:	83 c4 0c             	add    $0xc,%esp
 f01000b3:	6a 00                	push   $0x0
-f01000b5:	68 78 e8 00 00       	push   $0xe878
-f01000ba:	68 d5 a6 17 f0       	push   $0xf017a6d5
+f01000b5:	68 73 e8 00 00       	push   $0xe873
+f01000ba:	68 c8 33 12 f0       	push   $0xf01233c8
 f01000bf:	e8 85 30 00 00       	call   f0103149 <env_create>
+	// Touch all you want.
+	ENV_CREATE(user_breakpoint, ENV_TYPE_USER);
 #endif // TEST*
     
 	// We only have one user environment for now, so just run it.
@@ -7371,244 +7372,245 @@ f010387b:	0f 20 d0             	mov    %cr2,%eax
 	// Handle kernel-mode page faults.
 
 	// LAB 3: Your code here.
-	if (tf->tf_cs == GD_KT)
-f010387e:	66 83 7b 34 08       	cmpw   $0x8,0x34(%ebx)
-f0103883:	75 17                	jne    f010389c <page_fault_handler+0x2b>
+	if ((tf->tf_cs & 3) == 0)
+f010387e:	f6 43 34 03          	testb  $0x3,0x34(%ebx)
+f0103882:	75 17                	jne    f010389b <page_fault_handler+0x2a>
     	panic("page_fault_handler : page fault in kernel\n");
-f0103885:	83 ec 04             	sub    $0x4,%esp
-f0103888:	68 b8 64 10 f0       	push   $0xf01064b8
-f010388d:	68 1c 01 00 00       	push   $0x11c
-f0103892:	68 f0 62 10 f0       	push   $0xf01062f0
-f0103897:	e8 36 c8 ff ff       	call   f01000d2 <_panic>
+f0103884:	83 ec 04             	sub    $0x4,%esp
+f0103887:	68 b8 64 10 f0       	push   $0xf01064b8
+f010388c:	68 1c 01 00 00       	push   $0x11c
+f0103891:	68 f0 62 10 f0       	push   $0xf01062f0
+f0103896:	e8 37 c8 ff ff       	call   f01000d2 <_panic>
     
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
 
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",
-f010389c:	ff 73 30             	pushl  0x30(%ebx)
-f010389f:	50                   	push   %eax
+f010389b:	ff 73 30             	pushl  0x30(%ebx)
+f010389e:	50                   	push   %eax
 		curenv->env_id, fault_va, tf->tf_eip);
-f01038a0:	a1 80 04 1e f0       	mov    0xf01e0480,%eax
+f010389f:	a1 80 04 1e f0       	mov    0xf01e0480,%eax
     
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
 
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",
-f01038a5:	ff 70 48             	pushl  0x48(%eax)
-f01038a8:	68 e4 64 10 f0       	push   $0xf01064e4
-f01038ad:	e8 9f fc ff ff       	call   f0103551 <cprintf>
+f01038a4:	ff 70 48             	pushl  0x48(%eax)
+f01038a7:	68 e4 64 10 f0       	push   $0xf01064e4
+f01038ac:	e8 a0 fc ff ff       	call   f0103551 <cprintf>
 		curenv->env_id, fault_va, tf->tf_eip);
 	print_trapframe(tf);
-f01038b2:	89 1c 24             	mov    %ebx,(%esp)
-f01038b5:	e8 4a fe ff ff       	call   f0103704 <print_trapframe>
+f01038b1:	89 1c 24             	mov    %ebx,(%esp)
+f01038b4:	e8 4b fe ff ff       	call   f0103704 <print_trapframe>
 	env_destroy(curenv);
-f01038ba:	83 c4 04             	add    $0x4,%esp
-f01038bd:	ff 35 80 04 1e f0    	pushl  0xf01e0480
-f01038c3:	e8 74 fb ff ff       	call   f010343c <env_destroy>
-f01038c8:	83 c4 10             	add    $0x10,%esp
+f01038b9:	83 c4 04             	add    $0x4,%esp
+f01038bc:	ff 35 80 04 1e f0    	pushl  0xf01e0480
+f01038c2:	e8 75 fb ff ff       	call   f010343c <env_destroy>
+f01038c7:	83 c4 10             	add    $0x10,%esp
 }
-f01038cb:	8b 5d fc             	mov    -0x4(%ebp),%ebx
-f01038ce:	c9                   	leave  
-f01038cf:	c3                   	ret    
+f01038ca:	8b 5d fc             	mov    -0x4(%ebp),%ebx
+f01038cd:	c9                   	leave  
+f01038ce:	c3                   	ret    
 
-f01038d0 <trap>:
+f01038cf <trap>:
     }
 }
 
 void
 trap(struct Trapframe *tf)
 {
-f01038d0:	55                   	push   %ebp
-f01038d1:	89 e5                	mov    %esp,%ebp
-f01038d3:	57                   	push   %edi
-f01038d4:	56                   	push   %esi
-f01038d5:	8b 75 08             	mov    0x8(%ebp),%esi
+f01038cf:	55                   	push   %ebp
+f01038d0:	89 e5                	mov    %esp,%ebp
+f01038d2:	57                   	push   %edi
+f01038d3:	56                   	push   %esi
+f01038d4:	8b 75 08             	mov    0x8(%ebp),%esi
 	// The environment may have set DF and some versions
 	// of GCC rely on DF being clear
 	asm volatile("cld" ::: "cc");
-f01038d8:	fc                   	cld    
+f01038d7:	fc                   	cld    
 
 static __inline uint32_t
 read_eflags(void)
 {
 	uint32_t eflags;
 	__asm __volatile("pushfl; popl %0" : "=r" (eflags));
-f01038d9:	9c                   	pushf  
-f01038da:	58                   	pop    %eax
+f01038d8:	9c                   	pushf  
+f01038d9:	58                   	pop    %eax
 	
 	// Check that interrupts are disabled.  If this assertion
 	// fails, DO NOT be tempted to fix it by inserting a "cli" in
 	// the interrupt path.
 	assert(!(read_eflags() & FL_IF));
-f01038db:	f6 c4 02             	test   $0x2,%ah
-f01038de:	74 19                	je     f01038f9 <trap+0x29>
-f01038e0:	68 fc 62 10 f0       	push   $0xf01062fc
-f01038e5:	68 f3 5d 10 f0       	push   $0xf0105df3
-f01038ea:	68 f4 00 00 00       	push   $0xf4
-f01038ef:	68 f0 62 10 f0       	push   $0xf01062f0
-f01038f4:	e8 d9 c7 ff ff       	call   f01000d2 <_panic>
+f01038da:	f6 c4 02             	test   $0x2,%ah
+f01038dd:	74 19                	je     f01038f8 <trap+0x29>
+f01038df:	68 fc 62 10 f0       	push   $0xf01062fc
+f01038e4:	68 f3 5d 10 f0       	push   $0xf0105df3
+f01038e9:	68 f4 00 00 00       	push   $0xf4
+f01038ee:	68 f0 62 10 f0       	push   $0xf01062f0
+f01038f3:	e8 da c7 ff ff       	call   f01000d2 <_panic>
 
 	cprintf("Incoming TRAP frame at %p\n", tf);
-f01038f9:	83 ec 08             	sub    $0x8,%esp
-f01038fc:	56                   	push   %esi
-f01038fd:	68 15 63 10 f0       	push   $0xf0106315
-f0103902:	e8 4a fc ff ff       	call   f0103551 <cprintf>
+f01038f8:	83 ec 08             	sub    $0x8,%esp
+f01038fb:	56                   	push   %esi
+f01038fc:	68 15 63 10 f0       	push   $0xf0106315
+f0103901:	e8 4b fc ff ff       	call   f0103551 <cprintf>
 
 	if ((tf->tf_cs & 3) == 3) {
-f0103907:	0f b7 46 34          	movzwl 0x34(%esi),%eax
-f010390b:	83 e0 03             	and    $0x3,%eax
-f010390e:	83 c4 10             	add    $0x10,%esp
-f0103911:	83 f8 03             	cmp    $0x3,%eax
-f0103914:	75 31                	jne    f0103947 <trap+0x77>
+f0103906:	0f b7 46 34          	movzwl 0x34(%esi),%eax
+f010390a:	83 e0 03             	and    $0x3,%eax
+f010390d:	83 c4 10             	add    $0x10,%esp
+f0103910:	83 f8 03             	cmp    $0x3,%eax
+f0103913:	75 31                	jne    f0103946 <trap+0x77>
 		// Trapped from user mode.
 		assert(curenv);
-f0103916:	a1 80 04 1e f0       	mov    0xf01e0480,%eax
-f010391b:	85 c0                	test   %eax,%eax
-f010391d:	75 19                	jne    f0103938 <trap+0x68>
-f010391f:	68 30 63 10 f0       	push   $0xf0106330
-f0103924:	68 f3 5d 10 f0       	push   $0xf0105df3
-f0103929:	68 fa 00 00 00       	push   $0xfa
-f010392e:	68 f0 62 10 f0       	push   $0xf01062f0
-f0103933:	e8 9a c7 ff ff       	call   f01000d2 <_panic>
+f0103915:	a1 80 04 1e f0       	mov    0xf01e0480,%eax
+f010391a:	85 c0                	test   %eax,%eax
+f010391c:	75 19                	jne    f0103937 <trap+0x68>
+f010391e:	68 30 63 10 f0       	push   $0xf0106330
+f0103923:	68 f3 5d 10 f0       	push   $0xf0105df3
+f0103928:	68 fa 00 00 00       	push   $0xfa
+f010392d:	68 f0 62 10 f0       	push   $0xf01062f0
+f0103932:	e8 9b c7 ff ff       	call   f01000d2 <_panic>
 
 		// Copy trap frame (which is currently on the stack)
 		// into 'curenv->env_tf', so that running the environment
 		// will restart at the trap point.
 		curenv->env_tf = *tf;
-f0103938:	b9 11 00 00 00       	mov    $0x11,%ecx
-f010393d:	89 c7                	mov    %eax,%edi
-f010393f:	f3 a5                	rep movsl %ds:(%esi),%es:(%edi)
+f0103937:	b9 11 00 00 00       	mov    $0x11,%ecx
+f010393c:	89 c7                	mov    %eax,%edi
+f010393e:	f3 a5                	rep movsl %ds:(%esi),%es:(%edi)
 		// The trapframe on the stack should be ignored from here on.
 		tf = &curenv->env_tf;
-f0103941:	8b 35 80 04 1e f0    	mov    0xf01e0480,%esi
+f0103940:	8b 35 80 04 1e f0    	mov    0xf01e0480,%esi
 	}
 
 	// Record that tf is the last real trapframe so
 	// print_trapframe can print some additional information.
 	last_tf = tf;
-f0103947:	89 35 a0 0c 1e f0    	mov    %esi,0xf01e0ca0
+f0103946:	89 35 a0 0c 1e f0    	mov    %esi,0xf01e0ca0
 trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
     
     cprintf("TRAP NUM : %u\n", tf->tf_trapno);
-f010394d:	83 ec 08             	sub    $0x8,%esp
-f0103950:	ff 76 28             	pushl  0x28(%esi)
-f0103953:	68 37 63 10 f0       	push   $0xf0106337
-f0103958:	e8 f4 fb ff ff       	call   f0103551 <cprintf>
+f010394c:	83 ec 08             	sub    $0x8,%esp
+f010394f:	ff 76 28             	pushl  0x28(%esi)
+f0103952:	68 37 63 10 f0       	push   $0xf0106337
+f0103957:	e8 f5 fb ff ff       	call   f0103551 <cprintf>
 
     int r;
     // cprintf("TRAPNO : %d\n", tf->tf_trapno);
     switch (tf->tf_trapno) {
-f010395d:	83 c4 10             	add    $0x10,%esp
-f0103960:	8b 46 28             	mov    0x28(%esi),%eax
-f0103963:	83 f8 03             	cmp    $0x3,%eax
-f0103966:	74 3a                	je     f01039a2 <trap+0xd2>
-f0103968:	83 f8 03             	cmp    $0x3,%eax
-f010396b:	77 07                	ja     f0103974 <trap+0xa4>
-f010396d:	83 f8 01             	cmp    $0x1,%eax
-f0103970:	75 78                	jne    f01039ea <trap+0x11a>
-f0103972:	eb 0c                	jmp    f0103980 <trap+0xb0>
-f0103974:	83 f8 0e             	cmp    $0xe,%eax
-f0103977:	74 18                	je     f0103991 <trap+0xc1>
-f0103979:	83 f8 30             	cmp    $0x30,%eax
-f010397c:	75 6c                	jne    f01039ea <trap+0x11a>
-f010397e:	eb 30                	jmp    f01039b0 <trap+0xe0>
+f010395c:	83 c4 10             	add    $0x10,%esp
+f010395f:	8b 46 28             	mov    0x28(%esi),%eax
+f0103962:	83 f8 03             	cmp    $0x3,%eax
+f0103965:	74 3a                	je     f01039a1 <trap+0xd2>
+f0103967:	83 f8 03             	cmp    $0x3,%eax
+f010396a:	77 07                	ja     f0103973 <trap+0xa4>
+f010396c:	83 f8 01             	cmp    $0x1,%eax
+f010396f:	75 78                	jne    f01039e9 <trap+0x11a>
+f0103971:	eb 0c                	jmp    f010397f <trap+0xb0>
+f0103973:	83 f8 0e             	cmp    $0xe,%eax
+f0103976:	74 18                	je     f0103990 <trap+0xc1>
+f0103978:	83 f8 30             	cmp    $0x30,%eax
+f010397b:	75 6c                	jne    f01039e9 <trap+0x11a>
+f010397d:	eb 30                	jmp    f01039af <trap+0xe0>
     	case T_DEBUG:
     		monitor(tf);
-f0103980:	83 ec 0c             	sub    $0xc,%esp
-f0103983:	56                   	push   %esi
-f0103984:	e8 0b d5 ff ff       	call   f0100e94 <monitor>
-f0103989:	83 c4 10             	add    $0x10,%esp
-f010398c:	e9 94 00 00 00       	jmp    f0103a25 <trap+0x155>
+f010397f:	83 ec 0c             	sub    $0xc,%esp
+f0103982:	56                   	push   %esi
+f0103983:	e8 0c d5 ff ff       	call   f0100e94 <monitor>
+f0103988:	83 c4 10             	add    $0x10,%esp
+f010398b:	e9 94 00 00 00       	jmp    f0103a24 <trap+0x155>
     		break;
         case T_PGFLT:
         	page_fault_handler(tf);
-f0103991:	83 ec 0c             	sub    $0xc,%esp
-f0103994:	56                   	push   %esi
-f0103995:	e8 d7 fe ff ff       	call   f0103871 <page_fault_handler>
-f010399a:	83 c4 10             	add    $0x10,%esp
-f010399d:	e9 83 00 00 00       	jmp    f0103a25 <trap+0x155>
+f0103990:	83 ec 0c             	sub    $0xc,%esp
+f0103993:	56                   	push   %esi
+f0103994:	e8 d8 fe ff ff       	call   f0103871 <page_fault_handler>
+f0103999:	83 c4 10             	add    $0x10,%esp
+f010399c:	e9 83 00 00 00       	jmp    f0103a24 <trap+0x155>
             break;
         case T_BRKPT:
             monitor(tf); 
-f01039a2:	83 ec 0c             	sub    $0xc,%esp
-f01039a5:	56                   	push   %esi
-f01039a6:	e8 e9 d4 ff ff       	call   f0100e94 <monitor>
-f01039ab:	83 c4 10             	add    $0x10,%esp
-f01039ae:	eb 75                	jmp    f0103a25 <trap+0x155>
+f01039a1:	83 ec 0c             	sub    $0xc,%esp
+f01039a4:	56                   	push   %esi
+f01039a5:	e8 ea d4 ff ff       	call   f0100e94 <monitor>
+f01039aa:	83 c4 10             	add    $0x10,%esp
+f01039ad:	eb 75                	jmp    f0103a24 <trap+0x155>
             break;
         case T_SYSCALL:
             r = syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx,
-f01039b0:	83 ec 08             	sub    $0x8,%esp
-f01039b3:	ff 76 04             	pushl  0x4(%esi)
-f01039b6:	ff 36                	pushl  (%esi)
-f01039b8:	ff 76 10             	pushl  0x10(%esi)
-f01039bb:	ff 76 18             	pushl  0x18(%esi)
-f01039be:	ff 76 14             	pushl  0x14(%esi)
-f01039c1:	ff 76 1c             	pushl  0x1c(%esi)
-f01039c4:	e8 2b 01 00 00       	call   f0103af4 <syscall>
+f01039af:	83 ec 08             	sub    $0x8,%esp
+f01039b2:	ff 76 04             	pushl  0x4(%esi)
+f01039b5:	ff 36                	pushl  (%esi)
+f01039b7:	ff 76 10             	pushl  0x10(%esi)
+f01039ba:	ff 76 18             	pushl  0x18(%esi)
+f01039bd:	ff 76 14             	pushl  0x14(%esi)
+f01039c0:	ff 76 1c             	pushl  0x1c(%esi)
+f01039c3:	e8 2c 01 00 00       	call   f0103af4 <syscall>
                         tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
             if (r < 0)
-f01039c9:	83 c4 20             	add    $0x20,%esp
-f01039cc:	85 c0                	test   %eax,%eax
-f01039ce:	79 15                	jns    f01039e5 <trap+0x115>
+f01039c8:	83 c4 20             	add    $0x20,%esp
+f01039cb:	85 c0                	test   %eax,%eax
+f01039cd:	79 15                	jns    f01039e4 <trap+0x115>
                 panic("trap.c/syscall : %e\n", r);
-f01039d0:	50                   	push   %eax
-f01039d1:	68 46 63 10 f0       	push   $0xf0106346
-f01039d6:	68 da 00 00 00       	push   $0xda
-f01039db:	68 f0 62 10 f0       	push   $0xf01062f0
-f01039e0:	e8 ed c6 ff ff       	call   f01000d2 <_panic>
+f01039cf:	50                   	push   %eax
+f01039d0:	68 46 63 10 f0       	push   $0xf0106346
+f01039d5:	68 da 00 00 00       	push   $0xda
+f01039da:	68 f0 62 10 f0       	push   $0xf01062f0
+f01039df:	e8 ee c6 ff ff       	call   f01000d2 <_panic>
             else
                 tf->tf_regs.reg_eax = r;
-f01039e5:	89 46 1c             	mov    %eax,0x1c(%esi)
-f01039e8:	eb 3b                	jmp    f0103a25 <trap+0x155>
+f01039e4:	89 46 1c             	mov    %eax,0x1c(%esi)
+f01039e7:	eb 3b                	jmp    f0103a24 <trap+0x155>
             break;
         default:
 	        // Unexpected trap: The user process or the kernel has a bug.
 	        print_trapframe(tf);
-f01039ea:	83 ec 0c             	sub    $0xc,%esp
-f01039ed:	56                   	push   %esi
-f01039ee:	e8 11 fd ff ff       	call   f0103704 <print_trapframe>
+f01039e9:	83 ec 0c             	sub    $0xc,%esp
+f01039ec:	56                   	push   %esi
+f01039ed:	e8 12 fd ff ff       	call   f0103704 <print_trapframe>
 	        if (tf->tf_cs == GD_KT)
-f01039f3:	83 c4 10             	add    $0x10,%esp
-f01039f6:	66 83 7e 34 08       	cmpw   $0x8,0x34(%esi)
-f01039fb:	75 17                	jne    f0103a14 <trap+0x144>
+f01039f2:	83 c4 10             	add    $0x10,%esp
+f01039f5:	66 83 7e 34 08       	cmpw   $0x8,0x34(%esi)
+f01039fa:	75 17                	jne    f0103a13 <trap+0x144>
 		        panic("unhandled trap in kernel");
-f01039fd:	83 ec 04             	sub    $0x4,%esp
-f0103a00:	68 5b 63 10 f0       	push   $0xf010635b
-f0103a05:	68 e2 00 00 00       	push   $0xe2
-f0103a0a:	68 f0 62 10 f0       	push   $0xf01062f0
-f0103a0f:	e8 be c6 ff ff       	call   f01000d2 <_panic>
+f01039fc:	83 ec 04             	sub    $0x4,%esp
+f01039ff:	68 5b 63 10 f0       	push   $0xf010635b
+f0103a04:	68 e2 00 00 00       	push   $0xe2
+f0103a09:	68 f0 62 10 f0       	push   $0xf01062f0
+f0103a0e:	e8 bf c6 ff ff       	call   f01000d2 <_panic>
 	        else {
 		        env_destroy(curenv);
-f0103a14:	83 ec 0c             	sub    $0xc,%esp
-f0103a17:	ff 35 80 04 1e f0    	pushl  0xf01e0480
-f0103a1d:	e8 1a fa ff ff       	call   f010343c <env_destroy>
-f0103a22:	83 c4 10             	add    $0x10,%esp
+f0103a13:	83 ec 0c             	sub    $0xc,%esp
+f0103a16:	ff 35 80 04 1e f0    	pushl  0xf01e0480
+f0103a1c:	e8 1b fa ff ff       	call   f010343c <env_destroy>
+f0103a21:	83 c4 10             	add    $0x10,%esp
 
 	// Dispatch based on what type of trap occurred
 	trap_dispatch(tf);
 
 	// Return to the current environment, which should be running.
 	assert(curenv && curenv->env_status == ENV_RUNNING);
-f0103a25:	a1 80 04 1e f0       	mov    0xf01e0480,%eax
-f0103a2a:	85 c0                	test   %eax,%eax
-f0103a2c:	74 06                	je     f0103a34 <trap+0x164>
-f0103a2e:	83 78 54 03          	cmpl   $0x3,0x54(%eax)
-f0103a32:	74 19                	je     f0103a4d <trap+0x17d>
-f0103a34:	68 08 65 10 f0       	push   $0xf0106508
-f0103a39:	68 f3 5d 10 f0       	push   $0xf0105df3
-f0103a3e:	68 0c 01 00 00       	push   $0x10c
-f0103a43:	68 f0 62 10 f0       	push   $0xf01062f0
-f0103a48:	e8 85 c6 ff ff       	call   f01000d2 <_panic>
+f0103a24:	a1 80 04 1e f0       	mov    0xf01e0480,%eax
+f0103a29:	85 c0                	test   %eax,%eax
+f0103a2b:	74 06                	je     f0103a33 <trap+0x164>
+f0103a2d:	83 78 54 03          	cmpl   $0x3,0x54(%eax)
+f0103a31:	74 19                	je     f0103a4c <trap+0x17d>
+f0103a33:	68 08 65 10 f0       	push   $0xf0106508
+f0103a38:	68 f3 5d 10 f0       	push   $0xf0105df3
+f0103a3d:	68 0c 01 00 00       	push   $0x10c
+f0103a42:	68 f0 62 10 f0       	push   $0xf01062f0
+f0103a47:	e8 86 c6 ff ff       	call   f01000d2 <_panic>
 	env_run(curenv);
-f0103a4d:	83 ec 0c             	sub    $0xc,%esp
-f0103a50:	50                   	push   %eax
-f0103a51:	e8 36 fa ff ff       	call   f010348c <env_run>
+f0103a4c:	83 ec 0c             	sub    $0xc,%esp
+f0103a4f:	50                   	push   %eax
+f0103a50:	e8 37 fa ff ff       	call   f010348c <env_run>
+f0103a55:	00 00                	add    %al,(%eax)
 	...
 
 f0103a58 <vec0>:

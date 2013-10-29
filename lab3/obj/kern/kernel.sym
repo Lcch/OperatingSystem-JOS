@@ -79,7 +79,7 @@ f01035c5 T trap_init
 f0103676 T print_regs
 f0103704 T print_trapframe
 f0103871 T page_fault_handler
-f01038d0 T trap
+f01038cf T trap
 f0103a58 T vec0
 f0103a62 T vec1
 f0103a6c T vec2
