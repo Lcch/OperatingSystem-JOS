@@ -151,8 +151,8 @@ f01000ab:	e8 15 35 00 00       	call   f01035c5 <trap_init>
 	ENV_CREATE(TEST, ENV_TYPE_USER);
 f01000b0:	83 c4 0c             	add    $0xc,%esp
 f01000b3:	6a 00                	push   $0x0
-f01000b5:	68 73 e8 00 00       	push   $0xe873
-f01000ba:	68 c8 33 12 f0       	push   $0xf01233c8
+f01000b5:	68 77 e8 00 00       	push   $0xe877
+f01000ba:	68 46 ed 14 f0       	push   $0xf014ed46
 f01000bf:	e8 85 30 00 00       	call   f0103149 <env_create>
 	// Touch all you want.
 	ENV_CREATE(user_breakpoint, ENV_TYPE_USER);
@@ -7812,9 +7812,9 @@ sys_getenvid(void)
 	return curenv->env_id;
 f0103b54:	a1 80 04 1e f0       	mov    0xf01e0480,%eax
 f0103b59:	8b 40 48             	mov    0x48(%eax),%eax
+            break;
         case SYS_cgetc:
             return sys_cgetc();
-            return 0;
             break;
         case SYS_getenvid:
             return sys_getenvid();
@@ -7876,7 +7876,7 @@ f0103bbf:	eb 14                	jmp    f0103bd5 <syscall+0xe1>
     panic("syscall not implemented");
 f0103bc1:	83 ec 04             	sub    $0x4,%esp
 f0103bc4:	68 c3 65 10 f0       	push   $0xf01065c3
-f0103bc9:	6a 5c                	push   $0x5c
+f0103bc9:	6a 5b                	push   $0x5b
 f0103bcb:	68 db 65 10 f0       	push   $0xf01065db
 f0103bd0:	e8 fd c4 ff ff       	call   f01000d2 <_panic>
 }

@@ -1,0 +1,8 @@
+\contentsline {section}{\numberline {1} Exercise 1 }{2}{section.1}
+\contentsline {section}{\numberline {2} Question }{2}{section.2}
+\contentsline {section}{\numberline {3} Exercise 2 }{2}{section.3}
+\contentsline {section}{\numberline {4} Challenge 1 }{2}{section.4}
+\contentsline {section}{\numberline {5} Exercise 3 }{2}{section.5}
+\contentsline {section}{\numberline {6} Exercise 4 }{3}{section.6}
+\contentsline {section}{\numberline {7} Exercise 5 }{4}{section.7}
+\contentsline {section}{\numberline {8} Question }{4}{section.8}

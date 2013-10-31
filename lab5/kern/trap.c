@@ -204,7 +204,7 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
-    cprintf("CPU %d, TRAP NUM : %u\n", cpunum(), tf->tf_trapno);
+    // cprintf("CPU %d, TRAP NUM : %u\n", cpunum(), tf->tf_trapno);
     
     int r;
 
@@ -254,6 +254,15 @@ trap_dispatch(struct Trapframe *tf)
 
 	// Handle keyboard and serial interrupts.
 	// LAB 5: Your code here.
+    if (tf->tf_trapno == IRQ_OFFSET + IRQ_KBD) {
+        kbd_intr();
+        return;
+    }
+
+    if (tf->tf_trapno == IRQ_OFFSET + IRQ_SERIAL) {
+        serial_intr();
+        return;
+    }
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
@@ -337,7 +346,7 @@ page_fault_handler(struct Trapframe *tf)
 
 	// Read processor's CR2 register to find the faulting address
 	fault_va = rcr2();
-	cprintf("%x\n", fault_va);
+	// cprintf("%x\n", fault_va);
 
 	// Handle kernel-mode page faults.
 

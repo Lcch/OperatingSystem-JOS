@@ -86,9 +86,6 @@ open(const char *path, int mode)
 		return r;
 	}
 
-
-	cprintf("OPEN\n");
-
 	return fd2num(fd);
 }
 
@@ -141,7 +138,6 @@ devfile_stat(struct Fd *fd, struct Stat *st)
 	if ((r = fsipc(FSREQ_STAT, NULL)) < 0) {
 		return r;
 	}
-	cprintf("OVER\n");
 	strcpy(st->st_name, fsipcbuf.statRet.ret_name);
 	st->st_size = fsipcbuf.statRet.ret_size;
 	st->st_isdir = fsipcbuf.statRet.ret_isdir;

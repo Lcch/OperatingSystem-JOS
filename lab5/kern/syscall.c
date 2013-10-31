@@ -147,8 +147,6 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 	env->env_tf.tf_eflags |= FL_IF;
 
 	return 0;
-
-	panic("sys_env_set_trapframe not implemented");
 }
 
 // Set the page fault upcall for 'envid' by modifying the corresponding struct
@@ -410,7 +408,6 @@ sys_ipc_recv(void *dstva)
 {
 	// cprintf("I am receiving???\n");
 	// LAB 4: Your code here.
-	cprintf("IPC RECV 0x%x\n", (uint32_t)dstva);
 	if (((uint32_t)dstva < UTOP) && ROUNDUP(dstva, PGSIZE) != dstva) return -E_INVAL;
 	curenv->env_ipc_recving = true;			// Env is blocked receiving
 	curenv->env_ipc_dstva = dstva;			// VA at which to map received page
@@ -440,7 +437,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// Return any appropriate return value.
 	// LAB 3: Your code here.
     
-    cprintf("SYSCALLNO %d\n", syscallno);
+    // cprintf("SYSCALLNO %d\n", syscallno);
 	int r = 0;
     switch (syscallno) {
     	case SYS_exofork:
@@ -493,8 +490,6 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
         dafult:
             return -E_INVAL;
 	}
-	if (r < 0) panic("syscall error %e\n", r);
 	return r;
-    panic("syscall not implemented");
 }
 

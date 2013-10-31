@@ -23,12 +23,10 @@ int32_t
 ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 {
 	// LAB 4: Your code here.
-	cprintf("0x%x 0x%x 0x%x\n", (uint32_t)from_env_store, (uint32_t)pg, (uint32_t)perm_store);
+	// cprintf("0x%x 0x%x 0x%x\n", (uint32_t)from_env_store, (uint32_t)pg, (uint32_t)perm_store);
 	int r;
 	if (pg != NULL) {
-		cprintf("BEGIN\n");
 		r = sys_ipc_recv(pg);
-		cprintf("OVER\n");
 	} else {
 		r = sys_ipc_recv((void *)UTOP);
 	}

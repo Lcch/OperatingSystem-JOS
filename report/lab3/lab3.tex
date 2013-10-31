@@ -13,6 +13,7 @@
 \usepackage{algorithmic}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{color}
 \usepackage{marvosym,listings,etoolbox}
 \usepackage{geometry}
 
@@ -82,7 +83,11 @@
 
 
 \par
-完成了所有的Exercise 和 Challenge
+\begin{section}{ Preface }
+\par
+大致使用了30小时，完成了所有的Exercise 和 Challenge
+\end{section}
+
 
 \begin{section}{ Part A: User Environments and Exception Handling }
 \begin{subsection}{ Exercise 1 }
@@ -736,16 +741,18 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 
 \end{subsection}
 
-\begin{subsection}{ Challenge 3 }
+\begin{subsection}{ \color[rgb]{1,0,0}{Challenge 3: sysenter/sysexit} }
+{\color[rgb]{1,0,0}
 \par
 让我们重新看看JOS中用户进程调用系统调用的情景：
 \par
 用户调用lib/syscall，syscall会根据参数生成汇编代码，通过int 0x30进入系统调用的中断，通过中断进入内核态的对应中断的入口，跳转到trap函数中，根据中断号为0x30，则进入syscall的处理程序，再根据syscall\_no来调用对应的系统调用执行程序，执行完后若无错误，则返回至trap部分直接通过恢复env来恢复到原来的运行状况。
 \par
-sysenter和sysexit这两个指令，是Intel专门用来加速int和iret的。其通过寄存器传参快速到达syscall中，而不需要通过中断进入内核态再通过trap的分发来到达syscall的执行程序。其中会用到3个特殊的寄存器称为model specific registers(MSRs)。这三个寄存器分别是：\par
+sysenter和sysexit这两个指令，是Intel专门用来加速int和iret的。其通过寄存器传参快速到达syscall中，而不需要通过中断进入内核态再通过trap的分发来到达syscall的执行程序。 其中会用到3个特殊的寄存器称为model specific registers(MSRs)。这三个寄存器分别是：\par
 (1) IA32\_SYSENTER\_CS(174H): 保存着内核态的CS段值		\par
 (2) IA32\_SYSENTER\_ESP(175H):	保存着内核态的栈，在JOS就是KSTACKTOP \par
 (3) IA32\_SYSENTER\_EIP(176H):	保存着sysenter\_handler的代码的地址 \par  
+}
 ~\\
 我们再来看看sysenter和sysexit具体会干什么： 	\par
 当sysenter执行时，处理器会依次执行： 			\par
@@ -999,8 +1006,13 @@ make run-breakpoint，backtrace，造成了page fault，具体如下图：
 
 \end{section}
 
-\begin{section}{ Something Interesting }
-
+\begin{section}{ Summary }
+\par
+这个Lab我前后做了大概30个小时，总体来说还是比较顺利的，特别是中断处理的部分，由于在大班中学习了理论只是以及xv6中的代码，所以做起来比较清晰。
+\par
+这个Lab还有一个有意思的地方就是用户进程的执行以及上下文切换的过程，一开始觉得挺神秘的东西，做完这个Lab后，我发现其实在上下文切换就是使用了一个Trapframe来保存现场，并保存在其相应进程的env\_tf 御中。在之后回到进程时就只需要按照其保存的trapframe中的状态进行恢复即可。
+\par
+这个Lab涉及到了比较多的汇编代码，这对一开始并不熟悉汇编的我是一个挑战，特别是env\_pop\_tf那段代码一开始看到之后完全就蒙了，一上来就movl \%0, \%\%esp，之后找了资料才明白这是在表示input/output中的第1个参数。之后的trapentry.S以及实现sysenter都让我对汇编代码有了更好的了解。写完之后才发现写汇编真是比看汇编费劲太多了。有一个地方debug了很长时间，后来才发现我把movl \$GD\_KD, \%eax,写成了movl GD\_KD, \%eax。虽然是宏，但是也是立即数，要加\$，这个真的是很不小心呀。
 \end{section}
 
 \end{document}

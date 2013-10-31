@@ -466,8 +466,6 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
         dafult:
             return -E_INVAL;
 	}
-	if (r < 0) panic("syscall error %e\n", r);
 	return r;
-    panic("syscall not implemented");
 }
 

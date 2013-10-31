@@ -78,7 +78,6 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
             break;
         case SYS_cgetc:
             return sys_cgetc();
-            return 0;
             break;
         case SYS_getenvid:
             return sys_getenvid();

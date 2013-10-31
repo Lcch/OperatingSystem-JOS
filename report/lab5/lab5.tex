@@ -84,7 +84,7 @@
 \par
 仅给file system environment I/O权限，如果同时有多个environment享有I/O权限，则会对于中断的分配到对应的user-mode environment造成很大困扰。
 \par
-IOPL有4种特权级，其中0级的特权最高，3级最低，而此处是给予用户进程权限，因此给予FL_IOPL_3。
+IOPL有4种特权级，其中0级的特权最高，3级最低，而此处是给予用户进程权限，因此给予FL\_IOPL\_3。
 \begin{lstlisting}[language=C]
     if (type == ENV_TYPE_FS)
         e->env_tf.tf_eflags |= FL_IOPL_3;        
@@ -93,7 +93,7 @@ IOPL有4种特权级，其中0级的特权最高，3级最低，而此处是给�
 
 \begin{section}{ Question }
 \par
-e->env_tf会在产生trap时，由硬件以及中断处理程序进行保存，在env_pop_tf()中恢复。
+e->env\_tf会在产生trap时，由硬件以及中断处理程序进行保存，在env\_pop\_tf()中恢复。
 \end{section}
 
 \begin{section}{ Exercise 2 }
@@ -113,7 +113,94 @@ e->env_tf会在产生trap时，由硬件以及中断处理程序进行保存，�
 \end{section}
 
 \begin{section}{ Exercise 3 }
+\par
+这里JOS实现了一个简易的类似exec功能的过程——spaw。根据Trapframe来使某一个进程的状态变化，从而实现类似exec的效果。
+\begin{lstlisting}[language=C]      
+static int
+sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
+{
+	// LAB 5: Your code here.
+	// Remember to check whether the user has supplied us with a good
+	// address!
+	struct Env * env;
+	int r = envid2env(envid, &env, 1);
+	if (r < 0) return -E_BAD_ENV;	
+
+	user_mem_assert (env, tf, sizeof(struct Trapframe), PTE_U);
+
+	env->env_tf = *tf;
+	env->env_tf.tf_cs |= 3;
+	env->env_tf.tf_eflags |= FL_IF;
+
+	return 0;
+}
+\end{lstlisting}
 \end{section}
+
+\begin{section}{ Exercise 4 }
+\par
+对于fork,spawn之后的进程之间对于file descriptor是共享的，因此在duppage需要考虑这一段。
+\begin{lstlisting}[language = C]
+static int
+duppage(envid_t envid, unsigned pn)
+{
+	// do not dup exception stack
+	if (pn * PGSIZE == UXSTACKTOP - PGSIZE) return 0;
+
+	int r;
+	void * addr = (void *)(pn * PGSIZE);
+    if (uvpt[pn] & PTE_SHARE) {
+        r = sys_page_map(0, addr, envid, addr, uvpt[pn] & PTE_SYSCALL);
+        if (r < 0) panic("duppage sys_page_map error : %e\n", r);
+    } else
+	if ((uvpt[pn] & PTE_W) || (uvpt[pn] & PTE_COW)) {
+		// cow
+		r = sys_page_map(0, addr, envid, addr, PTE_COW | PTE_P | PTE_U);
+		if (r < 0) panic("duppage sys_page_map error : %e\n", r);
+		
+		r = sys_page_map(0, addr, 0, addr, PTE_COW | PTE_P | PTE_U);
+		if (r < 0) panic("duppage sys_page_map error : %e\n", r);
+	} else {
+		// read only
+		r = sys_page_map(0, addr, envid, addr, PTE_P | PTE_U);
+		if (r < 0) panic("duppage sys_page_map error : %e\n", r);
+	}
+
+	return 0;
+}
+\end{lstlisting}
+\par
+对于spawn也需要进行这部分的映射。
+\begin{lstlisting}[language = C]
+// Copy the mappings for shared pages into the child address space.
+static int
+copy_shared_pages(envid_t child)
+{
+	// LAB 5: Your code here.
+    uint32_t i;
+    int r;
+    for (i = 0; i != UTOP; i += PGSIZE) 
+    if ((uvpd[PDX(i)] & PTE_P) && (uvpt[i / PGSIZE] & PTE_P) && (uvpt[i / PGSIZE] & PTE_SHARE)) {
+        r = sys_page_map(0, (void *)i, child, (void *)i, uvpt[i / PGSIZE] & PTE_SYSCALL);
+        if (r < 0) return r;
+    }
+	return 0;
+}
+\end{lstlisting}
+\end{section}
+
+\begin{section}{ Exercise 5 }
+\par
+这部分比较简单，增加trap处理判断即可。
+\end{section}
+
+\begin{section}{ Question }
+\par
+2. About 10 hours.
+\par
+3. 这部分的exercise比较少，需要看的代码比较多，对于file I/O有了解，但是因为经过写的训练，总觉的有点陌生。
+\end{section}
+
 
 \end{document}
 
