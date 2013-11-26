@@ -190,6 +190,7 @@ mem_init(void)
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
+    cprintf("%d\n", sizeof(struct Env));
     boot_map_region(kern_pgdir,
                     UENVS,
                     ROUNDUP(NENV * sizeof(struct Env), PGSIZE),

@@ -81,9 +81,14 @@
 \newpage
 
 \begin{section}{Part A: Multiprocessor Support and Cooperative Multitasking}
+\par
+Part A是在JOS上实现多核，采用SMP模型，即对每个CPU都有相同访问系统资源和I/O总线的能力。SMP将CPU分为两类，一个是BSP负责对系统进行启动，以及APs由BSP在启动系统后启动。APIC由两部分组成，一部分是IOAPIC，其功能是负责将中断信息分派给每颗CPU的LAPIC，另一部分就是LAPIC，其决定是否接受总线上传递的中断信息，LAPIC也可以获得CPU的信息。
+\par
+一般来说，访问LAPIC是通过MMIO的技术来实现的，将某一段内存和I/O链接起来，一般来说LAPIC是在物理内存的0xFE000000处，但是在JOS没有这么大的内存，因此用虚拟内存的高32M作为该段的MMIO。
+
 \begin{subsection}{Exercise 1}
 \par
-这是是要我们实现一个用于简单分配内存空间进行映射的函数，利用以前写的boot\_map\_region就可以很容易的实现。
+这是是要我们实现一个用于简单分配内存空间进行映射作为MMIO，利用以前写的boot\_map\_region就可以很容易的实现。
 \begin{lstlisting}[language=C]
 void *
 mmio_map_region(physaddr_t pa, size_t size)
@@ -129,10 +134,12 @@ page_init(void)
 
 \begin{subsection}{Question 1}
 \par
-kern/mpentry.S的链接地址在KERNBASE以上，boot aps之前将其代码拷贝至MPENTRY\_PADDR，而MPBOOTPHYS就是用来将高地址的位置进行转化至MPENTRY\_PADDR开始的低地址的，如果注释掉这个宏，则在使用绝对地址的寻址和跳转则会造成Page Fault。
+kern/mpentry.S的链接地址在KERNBASE以上，boot aps之前将其代码拷贝至MPENTRY\_PADDR，注意到aps实际运行的时候还是在实模式， 而MPBOOTPHYS就是用来将高地址的位置进行转化至MPENTRY\_PADDR开始的低地址的，如果注释掉这个宏，则在使用绝对地址的寻址和跳转则会造成Page Fault。
 \end{subsection}
 
 \begin{subsection}{Exercise 3}
+\par
+这部分是对每个CPU进行初始化，包括虚拟内存映射的初始化，以及trap触发对每个CPU进行初始化
 \par
 问题：为什么给kern\_pgdir即可，不用每个cpu的pgdir都赋予值？
 \par
@@ -174,6 +181,9 @@ trap_init_percpu(void)
     lidt(&idt_pd);
 }
 \end{lstlisting}
+\par
+符合预期：
+\includegraphics[scale=0.5]{pic1.png}
 \end{subsection}
 
 \begin{subsection}{Exercise 5}
@@ -215,6 +225,8 @@ sched_yield(void)
 	sched_halt();
 }
 \end{lstlisting}
+符合预期：
+\includegraphics[scale=0.5]{pic2.png}
 \end{subsection}
 
 \begin{subsection}{Question 3-4}
@@ -364,7 +376,7 @@ sys_exofork(void)
 
 \begin{subsubsection}{sys\_env\_set\_status}
 \par
-这个是设置environment的status，按照注释做即可。
+这个函数是设置environment的status。
 \begin{lstlisting}[language=C]
 static int
 sys_env_set_status(envid_t envid, int status)
@@ -383,7 +395,7 @@ sys_env_set_status(envid_t envid, int status)
 
 \begin{subsubsection}{sys\_page\_alloc}
 \par
-这个函数是为environment创建虚拟地址va的映射页，按照注释一条一条做即可。注意如何无法建立映射，则新分配的页需要释放掉。
+这个函数是为environment创建虚拟地址va的映射页，需要进行一般性的判断，例如是否有权限以及是否对齐。最后需要注意如何无法建立映射，则新分配的页需要释放掉。
 \begin{lstlisting}[language=C]
 static int
 sys_page_alloc(envid_t envid, void *va, int perm)
@@ -425,7 +437,6 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	if ((uint32_t)srcva >= UTOP || ROUNDUP(srcva, PGSIZE) != srcva) return -E_INVAL;
 	if ((uint32_t)dstva >= UTOP || ROUNDUP(dstva, PGSIZE) != dstva) return -E_INVAL;
 
-
 	// struct PageInfo * page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 	struct PageInfo * pg;
 	pte_t * pte;
@@ -446,7 +457,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
 
 \begin{subsubsection}{sys\_page\_unmap}
 \par
-按照注释一条一条做即可。
+这个注释是解除页面中某一段的映射。
 \begin{lstlisting}[language=C]
 static int
 sys_page_unmap(envid_t envid, void *va)
@@ -735,8 +746,8 @@ pgfault(struct UTrapframe *utf)
 \end{subsubsection}
 \par
 运行lib/fork.c，效果和给定的一致。这样PartB就结束了。
+\includegraphics[scale=0.5]{pic3.png}
 \end{subsection}
-
 \end{section}
 
 \begin{section}{ Part C: IPC }
@@ -787,7 +798,6 @@ if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER) {
 static int
 sys_ipc_recv(void *dstva)
 {
-	// cprintf("I am receiving???\n");
 	// LAB 4: Your code here.
 	if (((uint32_t)dstva < UTOP) && ROUNDUP(dstva, PGSIZE) != dstva) return -E_INVAL;
 	curenv->env_ipc_recving = true;			// Env is blocked receiving
@@ -795,7 +805,6 @@ sys_ipc_recv(void *dstva)
 	curenv->env_ipc_from = 0;				// set from to 0
 	curenv->env_status = ENV_NOT_RUNNABLE;	// mark it not runnable
 	// cprintf("I am receiving!!!\n");
-	// cprintf("%d, %d\n", curenv->env_ipc_recving, curenv->env_ipc_from);
 	sched_yield();							// give up the CPU
 
 	return 0;
@@ -916,9 +925,28 @@ ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 }
 \end{lstlisting}
 \end{subsection}
-
 \end{subsection}
+\par
+pingpong执行情况
+\includegraphics[scale=0.5]{pingpong.png}
+\par
+primes执行情况：
+\includegraphics[scale=0.5]{primes.png}
 
+\par
+make grade纪念：
+\includegraphics[scale=0.5]{makegrade.png}
+\end{section}
+
+\begin{section}{ Summary }
+\begin{subsection}{ Endless Debug }
+\par
+通过这个Lab我深刻理解了操作系统和我平时一般写的程序的区别，在写操作系统，是站在系统的角度，要综合考虑系统的宏观和微观，首先要有一个宏观的框架，在这个框架下搭建小的细节。而且操作系统之间存在用户模式和内核模式，在这两块的切换处理非常绕，以及操作系统又要和软件打交道又要和硬件打交道，这些都是非常考验对操作系统宏观的理解的。虽然JOS是个小型的操作系统，但是写起来非常费劲，有时候写一个程序还需要考虑和别的程序之间的调用情况，还要防止内核的错误以及用户的不正确行为。在JOS编写中，遇到了bug真的是非常头疼，特别是当浏览程序都发先没有什么问题的时候真是着实让人抓狂。
+\par
+在这个Lab中我花了非常非常多的时间在Debug中，其中很大一部分原因是自己的粗心造成的，还有就是对问题的不够理解。主要犯的bug有在Copy-on-Write的地方，我以为utf->utf\_fault\_va是对齐PGSIZE，实际上不是，我调试了整整一个白天。以及在ipc的地方也因为代码错误导致了陷入debug中无法自拔。太伤心了。我在lab4中的花的大部分时间都在不断的debug上面。
+\par
+通过这个Lab我发现虚拟机真的是个好东西，我调试采用了printf的调试方案，崩一次换一个地方printf。如果是真机上面的写的操作系统，我觉得我的硬件早就被我玩坏了。
+\end{subsection}
 \end{section}
 
 \end{document}

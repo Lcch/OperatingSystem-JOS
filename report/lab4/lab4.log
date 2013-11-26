@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.1415926-2.4-0.9998 (TeX Live 2012/Debian) (format=xelatex 2013.10.1)  30 OCT 2013 00:40
+This is XeTeX, Version 3.1415926-2.4-0.9998 (TeX Live 2012/Debian) (format=xelatex 2013.10.1)  25 NOV 2013 23:14
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1262,15 +1262,9 @@ File: se-ascii-print.def 2011/12/02 v1.10 stringenc: Printable ASCII characters
 \openout4 = `lab4.toc'.
 
  [2]
-Overfull \hbox (20.9921pt too wide) in paragraph at lines 86--87
-[]\EU1/SimSun(0)/m/n/10 这 是 是 要 我 们 实 现 一 个 用 于 简 单
- 分 配 内 存 空 间 进 行 映 射 的 函 数，| 利 用 以 前 写 �
-� \EU1/lmr/m/n/10 boot_map_region
- []
+LaTeX Font Info:    Try loading font information for EU1+lmtt on input line 92.
 
-LaTeX Font Info:    Try loading font information for EU1+lmtt on input line 87.
-
-(/usr/share/texlive/texmf-dist/tex/latex/euenc/eu1lmtt.fd
+ (/usr/share/texlive/texmf-dist/tex/latex/euenc/eu1lmtt.fd
 File: eu1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 .................................................
@@ -1308,26 +1302,64 @@ talicFont={*},BoldItalicFont={*},SlantedFont={*},BoldSlantedFont={*}].
 . <->"[SIMFANG.TTF]/ICU:mapping=tex-text;embolden=4.000000000;"
 .................................................
 LaTeX Font Info:    Font shape `EU1/lmtt/bx/n' in size <8> not available
-(Font)              Font shape `EU1/lmtt/b/n' tried instead on input line 88.
- [3] [4] [5] [6]
-[7]
+(Font)              Font shape `EU1/lmtt/b/n' tried instead on input line 93.
+ [3]
+[4]
+File: pic1.png Graphic file (type QTm)
+ <use  "pic1.png" >
+Overfull \hbox (9.4431pt too wide) in paragraph at lines 185--188
+[]\EU1/SimSun(0)/m/n/10 符 合 预 期：| []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 185--188
+
+ []
+
+[5]
+File: pic2.png Graphic file (type QTm)
+ <use  "pic2.png" > [6] [7] [8]
 File: ch2.png Graphic file (type QTm)
- <use  "ch2.png" > [8] [9] [10] [11] [12] [13] [14] [15] [16] [17] [18]
-[19]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 924.
- [20]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 924.
+ <use  "ch2.png" > [9] [10] [11] [12]
+[13] [14] [15] [16] [17]
+File: pic3.png Graphic file (type QTm)
+ <use  "pic3.png" >
+Overfull \hbox (114.4116pt too wide) in paragraph at lines 748--752
+[]\EU1/SimSun(0)/m/n/10 运 行 \EU1/lmr/m/n/10 lib/fork.c\EU1/SimSun(0)/m/n/10
+ ，| 效 果 和 给 定 的 一 致。| 这 样 \EU1/lmr/m/n/10 PartB \EU1/Si
+mSun(0)/m/n/10 就 结 束 了。| []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 748--752
+
+ []
+
+[18] [19] [20] [21] [22]
+File: pingpong.png Graphic file (type QTm)
+ <use  "pingpong.png" >
+File: primes.png Graphic file (type QTm)
+ <use  "primes.png" >
+Overfull \hbox (43.14246pt too wide) in paragraph at lines 933--935
+[]\EU1/lmr/m/n/10 primes \EU1/SimSun(0)/m/n/10 执 行 情 况：| [] 
+ []
+
+File: makegrade.png Graphic file (type QTm)
+<use  "makegrade.png" > [23]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 952.
+ [24]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 952.
  (./lab4.aux)
-Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 924.
-Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 924.
+Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 952.
+Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 952.
  ) 
 Here is how much of TeX's memory you used:
- 24399 strings out of 494003
- 467133 string characters out of 3152809
- 729004 words of memory out of 3000000
- 27312 multiletter control sequences out of 15000+200000
+ 24412 strings out of 494003
+ 467262 string characters out of 3152809
+ 709004 words of memory out of 3000000
+ 27319 multiletter control sequences out of 15000+200000
  8348 words of font info for 60 fonts, out of 3000000 for 9000
  1144 hyphenation exceptions out of 8191
- 56i,12n,56p,837b,1950s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 56i,12n,56p,837b,1952s stack positions out of 5000i,500n,10000p,200000b,50000s
 
-Output written on lab4.pdf (20 pages).
+Output written on lab4.pdf (24 pages).

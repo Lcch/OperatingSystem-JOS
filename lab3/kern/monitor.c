@@ -34,7 +34,8 @@ static struct Command commands[] = {
     { "setpermission", "set permission", mon_setpermission },
     { "dump", "dump contents in memory", mon_dump },
     { "continue", "continue in breakpoint", mon_continue},
-    { "si", "single-step in breakpoint", mon_si}
+    { "si", "single-step in breakpoint", mon_si},
+    { "gdt", "gdt", mon_gdt}
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -289,6 +290,19 @@ mon_si(int argc, char **argv, struct Trapframe *tf)
     cprintf("tfno: %u\n", tf->tf_trapno);
     env_run(curenv);
     panic("mon_si : env_run return");
+    return 0;
+}
+
+int 
+mon_gdt(int argc, char **argv, struct Trapframe *tf)
+{
+    int i;
+    void * g;
+    cprintf("%d\n", gdt[2]);
+    for (i = 0; i != 6; i ++) {
+        g = gdt + i;
+        cprintf("entry %d: 0x%08x 0x%08x\n", i, *((uint32_t*)(g)), *((uint32_t*)(g+4)));
+    }
     return 0;
 }
 
