@@ -6,7 +6,9 @@
 #define UTEMP3			(UTEMP2 + PGSIZE)
 
 // Helper functions for spawn.
-static int init_stack(envid_t child, const char **argv, uintptr_t *init_esp);
+extern int sys_exec(uint32_t eip, uint32_t esp, void * ph, uint32_t phnum);
+
+static int init_stack(envid_t child, const char **argv, uintptr_t *init_esp, uint32_t stack_addr);
 static int map_segment(envid_t child, uintptr_t va, size_t memsz,
 		       int fd, size_t filesz, off_t fileoffset, int perm);
 static int copy_shared_pages(envid_t child);
@@ -104,15 +106,12 @@ spawn(const char *prog, const char **argv)
 		return r;
 	child = r;
 
-
-
 	// Set up trap frame, including initial stack.
 	child_tf = envs[ENVX(child)].env_tf;
 	child_tf.tf_eip = elf->e_entry;
 
-	if ((r = init_stack(child, argv, &child_tf.tf_esp)) < 0)
+	if ((r = init_stack(child, argv, &child_tf.tf_esp, (USTACKTOP - PGSIZE))) < 0)
 		return r;
-
 
 	// Set up program segments as defined in ELF header.
 	ph = (struct Proghdr*) (elf_buf + elf->e_phoff);
@@ -145,6 +144,99 @@ error:
 	sys_env_destroy(child);
 	close(fd);
 	return r;
+}
+
+// exec: Since I don't know how to built dynamic linking in JOS, so I use virtual address that starts from 
+// 		 0x80000000(MYTEMPLATE) to be template block cache. Then sys_exec is a system call to complete 
+// 		 memory setting.
+// Remember: When there is virtual memory in ELF linking address overlaped with MYTEMPLATE, exec will fail.
+int
+exec(const char *prog, const char **argv)
+{
+	unsigned char elf_buf[512];
+	uintptr_t tf_esp;
+
+	int fd, i, r;
+	struct Elf *elf;
+	struct Proghdr *ph;
+	int perm;	
+
+
+	if ((r = open(prog, O_RDONLY)) < 0)
+		return r;
+	fd = r;
+
+	// Read elf header
+	elf = (struct Elf*) elf_buf;
+	if (readn(fd, elf_buf, sizeof(elf_buf)) != sizeof(elf_buf)
+	    || elf->e_magic != ELF_MAGIC) {
+		close(fd);
+		cprintf("elf magic %08x want %08x\n", elf->e_magic, ELF_MAGIC);
+		return -E_NOT_EXEC;
+	}
+
+
+	// Set up program segments as defined in ELF header.
+	uint32_t now_addr = MYTEMPLATE;
+	ph = (struct Proghdr*) (elf_buf + elf->e_phoff);
+	for (i = 0; i < elf->e_phnum; i++, ph++) {
+		if (ph->p_type != ELF_PROG_LOAD)
+			continue;
+		perm = PTE_P | PTE_U;
+		if (ph->p_flags & ELF_PROG_FLAG_WRITE)
+			perm |= PTE_W;
+		if ((r = map_segment(0, PGOFF(ph->p_va) + now_addr, ph->p_memsz,
+				     fd, ph->p_filesz, ph->p_offset, perm)) < 0)
+			goto error;
+		now_addr += ROUNDUP(ph->p_memsz + PGOFF(ph->p_va), PGSIZE);
+	}
+	close(fd);
+	fd = -1;
+
+	// Set up Stack 
+	if ((r = init_stack(0, argv, &tf_esp, now_addr)) < 0)
+		return r;
+
+	// Syscall to exec
+	if (sys_exec(elf->e_entry, tf_esp, (void *)(elf_buf + elf->e_phoff), elf->e_phnum) < 0)
+		goto error;
+	return 0;
+
+error:
+	sys_env_destroy(0);
+	close(fd);
+	return r;
+}
+
+// Exec, taking command-line arguments array directly on the stack.
+// NOTE: Must have a sentinal of NULL at the end of the args
+// (none of the args may be NULL).
+int
+execl(const char *prog, const char *arg0, ...)
+{
+	// We calculate argc by advancing the args until we hit NULL.
+	// The contract of the function guarantees that the last
+	// argument will always be NULL, and that none of the other
+	// arguments will be NULL.
+	int argc=0;
+	va_list vl;
+	va_start(vl, arg0);
+	while(va_arg(vl, void *) != NULL)
+		argc++;
+	va_end(vl);
+
+	// Now that we have the size of the args, do a second pass
+	// and store the values in a VLA, which has the format of argv
+	const char *argv[argc+2];
+	argv[0] = arg0;
+	argv[argc+1] = NULL;
+
+	va_start(vl, arg0);
+	unsigned i;
+	for(i=0;i<argc;i++)
+		argv[i+1] = va_arg(vl, const char *);
+	va_end(vl);
+	return exec(prog, argv);
 }
 
 // Spawn, taking command-line arguments array directly on the stack.
@@ -187,7 +279,7 @@ spawnl(const char *prog, const char *arg0, ...)
 // to the initial stack pointer with which the child should start.
 // Returns < 0 on failure.
 static int
-init_stack(envid_t child, const char **argv, uintptr_t *init_esp)
+init_stack(envid_t child, const char **argv, uintptr_t *init_esp, uint32_t stack_addr)
 {
 	size_t string_size;
 	int argc, i, r;
@@ -251,11 +343,11 @@ init_stack(envid_t child, const char **argv, uintptr_t *init_esp)
 
 	// After completing the stack, map it into the child's address space
 	// and unmap it from ours!
-	if ((r = sys_page_map(0, UTEMP, child, (void*) (USTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W)) < 0)
+	
+	if ((r = sys_page_map(0, UTEMP, child, (void*) stack_addr, PTE_P | PTE_U | PTE_W)) < 0)
 		goto error;
 	if ((r = sys_page_unmap(0, UTEMP)) < 0)
 		goto error;
-
 	return 0;
 
 error:

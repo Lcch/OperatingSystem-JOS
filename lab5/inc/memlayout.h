@@ -82,6 +82,8 @@
  *     there if desired.  JOS user programs map pages temporarily at UTEMP.
  */
 
+// Lab5 Challenge 2: template block cache for exec
+#define MYTEMPLATE  0x80000000
 
 // All physical memory mapped at this address
 #define	KERNBASE	0xF0000000

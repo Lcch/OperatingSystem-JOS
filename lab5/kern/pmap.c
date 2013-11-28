@@ -518,7 +518,7 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 	// Fill this function in
     pte_t * pte = pgdir_walk(pgdir, va, 0);
     if (pte == NULL || (*pte & PTE_P) == 0) return NULL;   // no page mapped at va
-    if (pte_store != 0) {
+    if (pte_store != NULL) {
         *pte_store = pte;
     }
     return pa2page(PTE_ADDR(*pte));

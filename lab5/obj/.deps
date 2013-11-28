@@ -59,9 +59,9 @@ obj/lib/spawn.o: lib/spawn.c inc/lib.h inc/types.h inc/stdio.h \
  inc/elf.h
 obj/lib/readline.o: lib/readline.c inc/stdio.h inc/stdarg.h inc/error.h
 obj/kern/syscall.o: kern/syscall.c inc/x86.h inc/types.h inc/error.h \
- inc/string.h inc/assert.h inc/stdio.h inc/stdarg.h kern/env.h inc/env.h \
- inc/trap.h inc/memlayout.h inc/mmu.h kern/cpu.h kern/pmap.h kern/trap.h \
- kern/syscall.h inc/syscall.h kern/console.h kern/sched.h
+ inc/string.h inc/assert.h inc/stdio.h inc/stdarg.h inc/elf.h kern/env.h \
+ inc/env.h inc/trap.h inc/memlayout.h inc/mmu.h kern/cpu.h kern/pmap.h \
+ kern/trap.h kern/syscall.h inc/syscall.h kern/console.h kern/sched.h
 obj/user/testfdsharing.o: user/testfdsharing.c inc/x86.h inc/types.h \
  inc/lib.h inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h \
  inc/env.h inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h inc/fs.h \

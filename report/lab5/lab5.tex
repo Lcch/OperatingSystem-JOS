@@ -80,9 +80,14 @@
 
 \newpage
 
+\par
+Lab5主要是要实现了一个简单的，只读，基于磁盘的文件系统，文件系统实际上是一个用户级的进程，其它用户进程对磁盘文件进行访问是通过和文件系统进程进行IPC通信来实现的。不过这个Lab材料太少了，看不太懂代码呀！
+\par
+Unix的文件系统将磁盘分为两个区域：inode和data区域。inode区域保存文件的状态属性，以及所指向数据块的指针，data区域存放文件的内容和元信息。
+JOS磁盘由两个基本单位：扇区和块。磁盘中一般第一块或最后一块是Super Block，里面存放了包含文件系统的各项元数据，例如block的大小，磁盘大小，磁盘布局等。
 \begin{section}{ Exercise 1 }
 \par
-仅给file system environment I/O权限，如果同时有多个environment享有I/O权限，则会对于中断的分配到对应的user-mode environment造成很大困扰。
+x86处理器通过EFLAGS寄存器中的IOPL位来决定保护模式下是否可以执行特殊的I/O指令，因此我们需要给file system environment I/O权限，如果同时有多个environment享有I/O权限，则会对于中断的分配到对应的user-mode environment造成很大困扰。
 \par
 IOPL有4种特权级，其中0级的特权最高，3级最低，而此处是给予用户进程权限，因此给予FL\_IOPL\_3。
 \begin{lstlisting}[language=C]
@@ -91,14 +96,16 @@ IOPL有4种特权级，其中0级的特权最高，3级最低，而此处是给�
 \end{lstlisting}
 \end{section}
 
-\begin{section}{ Question }
+\begin{section}{ Question 1 }
 \par
 e->env\_tf会在产生trap时，由硬件以及中断处理程序进行保存，在env\_pop\_tf()中恢复。
 \end{section}
 
 \begin{section}{ Exercise 2 }
 \par
-本质上这就是一个page fault handler，不同之处在于拷贝信息，一个是从内存中，这个是从硬盘中。
+Block Cache是物理磁盘上磁盘块的缓存，用来加速对磁盘的访问。JOS在文件系统进程中使用最多3G(DISKSIZE)内存在保存磁盘内容，从DISKMAP开始的3G来进行内存到磁盘空间的映射。开始并不会进行映射，只有在需要访问某个磁盘块的时候才会进行Block Cache。因此本质上这就是一个page fault handler，不同之处在于拷贝信息，一个是从内存中，这个是从硬盘中。
+\par
+在真实的文件系统中一般在会限制the block cache的大小，当超过大小的时候，则会将一部分磁盘块缓存写回磁盘块中。但是JOS的文件系统中并没有实现回收。
 \begin{lstlisting}[language=C]
     	addr = ROUNDDOWN(addr, PGSIZE);
 	r = sys_page_alloc(0, addr, PTE_W | PTE_U | PTE_P);
@@ -109,12 +116,12 @@ e->env\_tf会在产生trap时，由硬件以及中断处理程序进行保存，
 \end{lstlisting}
 \end{section}
 
-\begin{section}{ Challenge 1 }
-\end{section}
-
 \begin{section}{ Exercise 3 }
 \par
-这里JOS实现了一个简易的类似exec功能的过程——spaw。根据Trapframe来使某一个进程的状态变化，从而实现类似exec的效果。
+这里JOS实现了一个简易的类似exec功能的过程——spaw。
+spaw大致流程：从磁盘中打开文件，读取文件，调用sys\_exofork创建子进程，并设置子进程的trapframe以及初始化其栈空间，并将elf文件读入子进程相应内存位置，设置eip和esp，并设置为RUNNABLE即可。
+\par
+sys\_env\_set\_trapframe使得进程根据Trapframe来使某一个进程的状态变化，例如设置进程的eip和esp位置，从而实现类似exec的效果。
 \begin{lstlisting}[language=C]      
 static int
 sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
@@ -135,6 +142,173 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 	return 0;
 }
 \end{lstlisting}
+
+\end{section}
+
+\begin{section}{ \textcolor[rgb]{1.00,0.00,0.00}{Challenge 2: Unix-style exec} }
+\par
+\textcolor[rgb]{1.00,0.00,0.00}{这里提到了spawn会比Unix-style exec要容易实现，这是为什么呢？}
+\par
+注意到执行spawn的时候，实际上当前进程fork了一个子进程，然后将需要执行的elf文件导入至子进程。而Unix style exec是replaces the current process image with a new process image.是不通过fork的。这就是两者的区别，Unix-style exec是比较困难实现的，因为很可能需要执行的elf文件需要存放的虚拟内存位置会和当前进程的代码和数据冲突，而导致崩溃。
+\par
+那么真实的操作系统是如何做到的呢？通过动态链接，这样用户库的exec就不会被读入的静态数据和代码而覆盖掉。
+\par
+\par
+赤手空拳难以写出动态链接，那么我们是不是可以实现一个伪动态链接，lab4中pgfault里面copy-on-write的时候通过临时页表进行保存。因此我们可以先把elf文件都存放在别的页面，等陷入kernel里面再移送到正确的位置。于是我很邪恶地将某一块地址 0x80000000开始的地方作为临时的缓冲区域。
+\par
+大致流程就是exec先将elf文件以及新的栈内容拷贝到临时内存中作为缓冲，再引发一个system call来实现将临时内存的内容拷贝至真是的地址上。因为在系统调用中处于内核，因此不用担心新的代码和数据将原用户代码和数据覆盖掉。
+\par
+在spawn.c中设置exec和execl函数，execl函数与spawnl几乎完全一样，exec如下。由于栈的内容不能马上进行覆盖，因此新的栈的内容也需要先放置在新的临时内存中。因此需要更改一下init\_stack函数中，即设置一下映射的地址即可。
+\begin{lstlisting}[language = C]
+// exec: Since I don't know how to built dynamic linking in JOS, so I use virtual address that starts from 
+// 		 0x80000000(MYTEMPLATE) to be template block cache. Then sys_exec is a system call to complete 
+// 		 memory setting.
+// Remember: When there is virtual memory in ELF linking address overlaped with MYTEMPLATE, exec will fail.
+int
+exec(const char *prog, const char **argv)
+{
+	unsigned char elf_buf[512];
+	uintptr_t tf_esp;
+
+	int fd, i, r;
+	struct Elf *elf;
+	struct Proghdr *ph;
+	int perm;	
+
+
+	if ((r = open(prog, O_RDONLY)) < 0)
+		return r;
+	fd = r;
+
+	// Read elf header
+	elf = (struct Elf*) elf_buf;
+	if (readn(fd, elf_buf, sizeof(elf_buf)) != sizeof(elf_buf)
+	    || elf->e_magic != ELF_MAGIC) {
+		close(fd);
+		cprintf("elf magic %08x want %08x\n", elf->e_magic, ELF_MAGIC);
+		return -E_NOT_EXEC;
+	}
+
+
+	// Set up program segments as defined in ELF header.
+	uint32_t now_addr = MYTEMPLATE;
+	ph = (struct Proghdr*) (elf_buf + elf->e_phoff);
+	for (i = 0; i < elf->e_phnum; i++, ph++) {
+		if (ph->p_type != ELF_PROG_LOAD)
+			continue;
+		perm = PTE_P | PTE_U;
+		if (ph->p_flags & ELF_PROG_FLAG_WRITE)
+			perm |= PTE_W;
+		if ((r = map_segment(0, PGOFF(ph->p_va) + now_addr, ph->p_memsz,
+				     fd, ph->p_filesz, ph->p_offset, perm)) < 0)
+			goto error;
+		now_addr += ROUNDUP(ph->p_memsz + PGOFF(ph->p_va), PGSIZE);
+	}
+	close(fd);
+	fd = -1;
+
+	// Set up Stack 
+	if ((r = init_stack(0, argv, &tf_esp, now_addr)) < 0)
+		return r;
+
+	// Syscall
+	if (sys_exec(elf->e_entry, tf_esp, (void *)(elf_buf + elf->e_phoff), elf->e_phnum) < 0)
+		goto error;
+	return 0;
+	
+error:
+	sys_env_destroy(0);
+	close(fd);
+	return r;
+}
+\end{lstlisting}
+
+\par
+设置新的system call，sys\_exec。将临时内存中的内容移动到真实的地址中，以及构建新的栈内容。代码如下：
+\begin{lstlisting}[language = C]
+static int
+sys_exec(uint32_t eip, uint32_t esp, void * v_ph, uint32_t phnum)
+{
+	// set new eip and esp
+	memset((void *)(&curenv->env_tf.tf_regs), 0, sizeof(struct PushRegs));
+	curenv->env_tf.tf_eip = eip;
+	curenv->env_tf.tf_esp = esp;
+
+	int perm, i;
+	uint32_t now_addr = MYTEMPLATE;
+	uint32_t va, end_addr;
+	struct PageInfo * pg;
+
+	// Elf 
+	struct Proghdr * ph = (struct Proghdr *) v_ph; 
+	for (i = 0; i < phnum; i++, ph++) {
+		if (ph->p_type != ELF_PROG_LOAD)
+			continue;
+		perm = PTE_P | PTE_U;
+		if (ph->p_flags & ELF_PROG_FLAG_WRITE)
+			perm |= PTE_W;
+
+		// Move to real virtual address
+		end_addr = ROUNDUP(ph->p_va + ph->p_memsz, PGSIZE);
+		for (va = ROUNDDOWN(ph->p_va, PGSIZE); va != end_addr; now_addr += PGSIZE, va += PGSIZE) {
+			if ((pg = page_lookup(curenv->env_pgdir, (void *)now_addr, NULL)) == NULL) 
+				return -E_NO_MEM;		// no page
+			if (page_insert(curenv->env_pgdir, pg, (void *)va, perm) < 0)
+				return -E_NO_MEM;		
+			page_remove(curenv->env_pgdir, (void *)now_addr);
+		}
+	}
+
+	// New Stack
+	if ((pg = page_lookup(curenv->env_pgdir, (void *)now_addr, NULL)) == NULL) 
+		return -E_NO_MEM;
+	if (page_insert(curenv->env_pgdir, pg, (void *)(USTACKTOP - PGSIZE), PTE_P|PTE_U|PTE_W) < 0) 
+		return -E_NO_MEM;
+	page_remove(curenv->env_pgdir, (void *)now_addr);
+	
+	env_run(curenv);		// never return
+	return 0;
+}
+\end{lstlisting}
+
+\par
+测试：利用spawnhello.c来测试，对于原始的spawnhello，在最后增加一行I come back！。
+\begin{lstlisting}[language = C]
+#include <inc/lib.h>
+
+void
+umain(int argc, char **argv)
+{
+	int r;
+	cprintf("i am parent environment %08x\n", thisenv->env_id);
+	if ((r = spawnl("hello", "hello", 0)) < 0)
+		panic("spawn(hello) failed: %e", r);
+	cprintf("I come back!\n");
+}
+\end{lstlisting}
+\par
+则结果应该是会执行"hello.c"并且会输出I come back!，因为spawn是基于fork的。结果符合预期
+\par
+\includegraphics[scale=0.5]{ch1.png}
+\par
+将spawnhello改为exec,即：
+\begin{lstlisting}[language = C]
+#include <inc/lib.h>
+
+void
+umain(int argc, char **argv)
+{
+	int r;
+	cprintf("i am parent environment %08x\n", thisenv->env_id);
+	if ((r = execl("hello", "hello", 0)) < 0)
+		panic("spawn(hello) exec: %e", r);
+	cprintf("I come back!\n");
+}
+\end{lstlisting}
+\par
+则结果应该会执行"hello.c"并且不会有输出I come back，以及exec的进程号与原进程号一样。结果符合预期
+\par
+\includegraphics[scale=0.5]{ch2.png}
 \end{section}
 
 \begin{section}{ Exercise 4 }
@@ -194,11 +368,18 @@ copy_shared_pages(envid_t child)
 这部分比较简单，增加trap处理判断即可。
 \end{section}
 
-\begin{section}{ Question }
+\begin{section}{ Question 2 }
 \par
 2. About 10 hours.
 \par
 3. 这部分的exercise比较少，需要看的代码比较多，对于file I/O有了解，但是因为经过写的训练，总觉的有点陌生。
+\end{section}
+
+\par
+make grade纪念，所有lab做完了：
+\par
+\includegraphics[scale=0.5]{lab5makegrade.png}
+\begin{section}{ Summary }
 \end{section}
 
 

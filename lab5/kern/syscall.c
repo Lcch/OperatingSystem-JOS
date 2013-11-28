@@ -4,6 +4,7 @@
 #include <inc/error.h>
 #include <inc/string.h>
 #include <inc/assert.h>
+#include <inc/elf.h>
 
 #include <kern/env.h>
 #include <kern/pmap.h>
@@ -429,6 +430,50 @@ sys_set_priority(envid_t envid, uint32_t new_priority)
 	return 0;
 }
 
+static int
+sys_exec(uint32_t eip, uint32_t esp, void * v_ph, uint32_t phnum)
+{
+	// set new eip and esp
+	memset((void *)(&curenv->env_tf.tf_regs), 0, sizeof(struct PushRegs));
+	curenv->env_tf.tf_eip = eip;
+	curenv->env_tf.tf_esp = esp;
+
+	int perm, i;
+	uint32_t now_addr = MYTEMPLATE;
+	uint32_t va, end_addr;
+	struct PageInfo * pg;
+
+	// Elf 
+	struct Proghdr * ph = (struct Proghdr *) v_ph; 
+	for (i = 0; i < phnum; i++, ph++) {
+		if (ph->p_type != ELF_PROG_LOAD)
+			continue;
+		perm = PTE_P | PTE_U;
+		if (ph->p_flags & ELF_PROG_FLAG_WRITE)
+			perm |= PTE_W;
+
+		// Move to real virtual address
+		end_addr = ROUNDUP(ph->p_va + ph->p_memsz, PGSIZE);
+		for (va = ROUNDDOWN(ph->p_va, PGSIZE); va != end_addr; now_addr += PGSIZE, va += PGSIZE) {
+			if ((pg = page_lookup(curenv->env_pgdir, (void *)now_addr, NULL)) == NULL) 
+				return -E_NO_MEM;		// no page
+			if (page_insert(curenv->env_pgdir, pg, (void *)va, perm) < 0)
+				return -E_NO_MEM;		
+			page_remove(curenv->env_pgdir, (void *)now_addr);
+		}
+	}
+
+	// New Stack
+	if ((pg = page_lookup(curenv->env_pgdir, (void *)now_addr, NULL)) == NULL) 
+		return -E_NO_MEM;
+	if (page_insert(curenv->env_pgdir, pg, (void *)(USTACKTOP - PGSIZE), PTE_P|PTE_U|PTE_W) < 0) 
+		return -E_NO_MEM;
+	page_remove(curenv->env_pgdir, (void *)now_addr);
+	
+	env_run(curenv);		// never return
+	return 0;
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -460,11 +505,11 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
     		break;
     	case SYS_yield:
     		sys_yield();
-    		return 0;
+    		r = 0;
     		break;
         case SYS_cputs:
             sys_cputs((char *)a1, (size_t)a2);
-            return 0;
+            r = 0;
             break;
         case SYS_cgetc:
             r = sys_cgetc();
@@ -476,19 +521,22 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
             r = sys_env_destroy(a1);
             break;
         case SYS_ipc_try_send:
-        	return sys_ipc_try_send((envid_t)a1, (uint32_t)a2, (void *)a3, (unsigned)a4);
+        	r = sys_ipc_try_send((envid_t)a1, (uint32_t)a2, (void *)a3, (unsigned)a4);
         	break;
         case SYS_ipc_recv:
-        	return sys_ipc_recv((void *)a1);
+        	r = sys_ipc_recv((void *)a1);
         	break;
         case SYS_set_priority:
-        	return sys_set_priority((envid_t)a1, (uint32_t)a2);
+        	r = sys_set_priority((envid_t)a1, (uint32_t)a2);
         	break;
         case SYS_env_set_trapframe:
-        	return sys_env_set_trapframe((envid_t)a1, (struct Trapframe *)a2);
+        	r = sys_env_set_trapframe((envid_t)a1, (struct Trapframe *)a2);
+        	break;
+        case SYS_exec:
+        	r = sys_exec((uint32_t)a1, (uint32_t)a2, (void *)a3, (uint32_t)a4);
         	break;
         dafult:
-            return -E_INVAL;
+            r = -E_INVAL;
 	}
 	return r;
 }
