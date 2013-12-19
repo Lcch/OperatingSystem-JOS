@@ -70,6 +70,7 @@ umain(int argc, char **argv)
   80007d:	68 8e 26 80 00       	push   $0x80268e
   800082:	e8 49 01 00 00       	call   8001d0 <cprintf>
   800087:	83 c4 10             	add    $0x10,%esp
+	
 }
   80008a:	c9                   	leave  
   80008b:	c3                   	ret    

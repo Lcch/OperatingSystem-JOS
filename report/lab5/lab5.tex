@@ -313,7 +313,7 @@ umain(int argc, char **argv)
 
 \begin{section}{ Exercise 4 }
 \par
-对于fork,spawn之后的进程之间对于file descriptor是共享的，因此在duppage需要考虑这一段。
+还记得在以前的fork中，采用了Copy-on-write的技术，因此需要在将PTE\_W或者PTE\_COW的页面标记为PTE\_COW。而对于文件，由于file descriptor是共享的，因此在duppage考虑一下PTE\_SHARE即可。
 \begin{lstlisting}[language = C]
 static int
 duppage(envid_t envid, unsigned pn)
@@ -344,7 +344,7 @@ duppage(envid_t envid, unsigned pn)
 }
 \end{lstlisting}
 \par
-对于spawn也需要进行这部分的映射。
+类似上一部分，对于spawn也需要进行这部分的映射。
 \begin{lstlisting}[language = C]
 // Copy the mappings for shared pages into the child address space.
 static int
@@ -380,7 +380,14 @@ make grade纪念，所有lab做完了：
 \par
 \includegraphics[scale=0.5]{lab5makegrade.png}
 \begin{section}{ Summary }
+\par
+这个Lab是JOS中的最后一个Lab，Exercise比较少，最后实现起来的代码也少，基本上按照注释就可以实现了。而这个Lab提到的JOS中的文件系统，因为在做这个Lab的时候，对于文件系统还不是很熟悉，而且这个Lab并没有很多预备的材料，因此花了许多时间在查找资料上面。在大致了解了Unix的文件系统的原理和结构之后，又花了非常多的时间在看JOS实现的文件系统上面，这一部分Lab中并没有很多地提到，而且代码量比较大，因此对于阅读代码对我造成了一定的困难，在这个Lab中我花在查资料以及阅读代码的时间远远多于写Exercise的时间。并且到现在我对文件系统中的代码也没有完全吃透，还是有一些只能明白个大概。
+\par
+在完成了Lab5后，基本上就结束了本学期的操作系统实习，在不断地做Lab的过程中，对如何实现一个操作系统有了即宏观又细节的了解。很大地锻炼了我的代码阅读能力以及代码编写和调试bug的能力。通过代码阅读，我感觉到很多底层代码有一定的trick，以及一些很巧妙的实现的地方，以及对c语言和汇编有了更深的理解，对我以后代码能力有了很大的提高。在系统编程中，遇到bug非常麻烦而且非常耗时，由于系统编程所涉及到的代码量和文件量比较大，而且许多bug的重现率很低，因此遇到bug真是一个非常头疼的事情。通过5个Lab的锻炼，我总结出遇到bug，首先要自己对这个系统要比较清楚，这样对于bug才可能有一定的判断，另外在调试bug中我大量使用输出调试，通过输出调试来看每一阶段的状态，我感觉这个调试方法在我做Lab中帮助非常大。
+\par
+最后，终于把Lab都做完了，哈哈哈，非常开心。
 \end{section}
+
 
 
 \end{document}
