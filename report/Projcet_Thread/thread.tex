@@ -1,0 +1,279 @@
+\XeTeXinputencoding "GBK"
+\documentclass[GBK,winfonts,a4paper,10pt]{ctexart}
+\usepackage{fancyhdr}
+\usepackage{indentfirst}
+\usepackage{graphics}
+\usepackage{enumerate}
+\usepackage{framed}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{mdwlist}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{marvosym,listings,etoolbox}
+\lstset{numbers=left, numberstyle=\small, keywordstyle=\color{blue!70}, commentstyle=\color{red!50!green!50!blue!50}, frame=shadowbox, rulesepcolor=\color{red!20!green!20!blue!20},escapeinside=``, xleftmargin=2em,xrightmargin=2em, aboveskip=1em}
+\usepackage{geometry}
+
+\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}%
+
+\patchcmd{\verb}{\dospecials}{\dospecials\atspecial}{}{}
+\def\atspecial{\begingroup\lccode`~=`@
+  \lowercase{\endgroup\let~}\MVAt
+  \catcode`@=\active}
+
+\lstdefinestyle{customc}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  frame=single,
+  xleftmargin=\parindent,
+  language=C,
+  showstringspaces=false,
+  basicstyle=\fontsize{8pt}{8pt}\ttfamily,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  identifierstyle=\color{blue},
+  stringstyle=\color{orange},
+  tabsize=4,
+  numbers=none,
+  mathescape=false,
+}
+\lstset{escapechar=@,style=customc}
+
+\pagestyle{fancy}
+\hypersetup{pdfborder=0 0 0}
+
+\usepackage{clrscode}
+
+\usepackage{latexsym}
+
+\begin{document}
+\rhead{}
+\lhead{}
+\cfoot{\thepage}
+\renewcommand{\footrulewidth}{0.4pt}
+%\renewcommand{\thesection}{}
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+\setlength{\tabcolsep}{2pt}
+
+\setlength{\parindent}{2em}
+
+\thispagestyle{fancy}
+
+
+\title{Operating System MIT 6.828 JOS Thread}
+\author{Computer Science \\ ChenHao(1100012776) }
+\date{\today}
+\maketitle
+
+\thispagestyle{fancy}
+
+\begin{section}{线程的基本概念}
+\par
+线程是同一进程中的共享同一地址空间的不同的控制流，每个进程可以拥有很多的线程，每个线程并行执行不同的任务。每个线程拥有自己独立的Program Counter，寄存器组，以及独立的栈空间，同时他们会共享同一块地址空间，也就共享代码，很大一部分数据，以及文件等等。从另一方面来讲可以认为线程是共享地址空间的进程。
+\par
+\includegraphics[width=2in]{mem.jpg}
+\par
+为什么我们需要线程，由于线程相对轻量级，在上下文切换的时候，线程上下文切换的开销要比进程上下文切换开销要小，其中不需要切换页目录是最直接的节约开销。另一方面线程在创建和删除所带来的开销也比进程，因此线程在很多情况下要比进程有更好的表现。另一方面进程进行交互比较困难，在Lab4中我们可以知道，为了实现进程的交互我们需要IPC机制，而且需要陷入到内核，一方面非常麻烦，另一方面开销也非常大。因此我们需要线程，当然线程也有自己需要解决的问题，那就是共享资源会导致竞争。
+\par
+多线程模型：
+\par
+1. 内核线程：即内核管理所有的线程，一个内核线程处于阻塞状态时不影响其他的内核线程。\par
+2. 用户线程：完全由用户库实现线程的创建，调度，撤销，以及调度，不需要任何内核的参与。其中一个比较大的问题是一个进程中的某一个线程因I/O被阻塞住时，该进程的别的线程无法被调度。 \par
+3. 复合用户线程：用户级别线程映射到内核线程。根据映射的不同分为Many-To-One, One-To-One, Many-To-Many的三种不同模式。 \par
+\end{section}
+
+\begin{section}{Linux中的线程实现}
+\begin{subsection}{LinuxThreads}
+\par
+在Linux Kernel 2.6以前，Linux对于线程的实现源于LinuxThreads项目，当时的设计者认为同一进程中的线程上下文切换要比进程之间的上下文切换要快，减少了上下文切换的开销。因此LinuxThreads采用One-To-One的线程模型，其实际的实现方式是在操作系统看来每个线程实际上都为一个轻量级的进程，对于线程的创建和进程创建的入口一致，只是线程共享了同一个地址空间，并且稍作设置。另一个LinuxThreads非常著名的特性就是管理线程，管理线程负责对线程创建，线程回收，以及对于信号的处理。
+\par
+在LinuxThread 2.4源代码中，线程的创建通过调用clone()的系统调用接口，clone()通过参数传递并设置其为线程创建后传递至do\_fork()中，这个函数同时也是fork系统调用的入口实现函数。其是否共享同一内存中由宏CLONE\_VM中控制。
+\par
+但是LinuxThreads拥有许多局限性，一方面管理线程对于线程的管理增加了开销，另外线程的管理方式以及进程号以及信号的处理都与POSIX规范不兼容。
+\end{subsection}
+\begin{subsection}{Naive POSIX Thread Library}
+\par
+从Linux Kernel 2.6后，Linux开始采用了新的线程处理，NPTL，它克服了许多LinuxThreads的缺点，也符合了POSIX的标准。NPTL实现和LinuxThreads类似，也是One-To-One的模型，并在也是一个轻量级的进程，线程的创建和进程创建的入口一致，在Kernel看来线程和进程几乎没有什么区别。另一方面NPTL没有使用管理线程，线程的创建、回收、以及调度都是由内核来管理。管理线程的一些需求，例如向作为进程一部分的所有线程发送终止信号，是并不需要的，因为内核本身就可以实现这些功能。内核还会处理每个线程堆栈所使用的内存的回收工作。它甚至还通过在清除父线程之前进行等待，从而实现对所有线程结束的管理，这样可以避免僵尸进程的问题。最重要的NPTL是POSIX 兼容的。之后LinuxThreads也不断改进克服了许多缺点，但是随着NPTL深入以及性能好，LinuxThreads依旧依赖于管理线程，存在许多问题。因此慢慢地Linux也不再积极地更新LinuxThreads了。
+\end{subsection}
+\end{section}
+
+\newpage
+
+\begin{section}{JOS中的线程实现}
+\begin{subsection}{涉及代码}
+\par
+\begin{lstlisting}[language=C, basicstyle=\ttfamily\tiny]
+//inc:
+inc\thread.h
+inc\lib.h
+
+//kern:
+kern\env.c:
+    void env_free(struct Env *e);   // different handling with main thread and other threads
+kern\syscall.c:
+    static envid_t sys_exothread(void);             // allocate a new enviroment without allocate new page direcotry
+    static int sys_join(envid_t envid);             // check whether given thread has been terminated
+    static int sys_env_destroy(envid_t envid);      // killing all threads before main thread exit
+kern\syscall.h
+
+//lib:
+lib\mem.c           // malloc function
+lib\thread.c        // user library
+
+//for check:
+user\thread_t1.c    // test threads create and terminate
+user\thread_t2.c    // test share memory, and cause race
+user\thread_t3.c    // test mutex
+\end{lstlisting}
+\end{subsection}
+
+\begin{subsection}{基本函数实现}
+\par
+我所实现的JOS线程是One-To-One模型的，每个线程在内核看来都是一个进程，内核不加区别地对待线程和进程。为了实现线程的回收和调度，我为struct Env增加了两项。
+\begin{lstlisting}[language=C]
+struct Env {
+	......
+	// Thread:
+	bool isthread;			// whether is a thread
+	envid_t env_tgid;		// thread group id	
+};
+\end{lstlisting}
+\par
+对于pthread\_create，十分类似exec的实现，只需要令其共享同一个地址空间即可，并设置线程的eip指向线程函数的开头，esp设置为该线程独立的栈空间。对于线程独立的栈空间这一部分我采用了malloc的方式，我实现了一个malloc，利用malloc来为线程的创建来分配栈空间。其中调用sys\_exothread来分配一个不需要分配页目录的enviroment。在这里我就贴出pthread create中的关键代码。
+\begin{lstlisting}[language=C]
+int
+pthread_create(uint32_t * t_id, void (*f)(void *), void *arg)
+{
+	char * t_stack = malloc(PGSIZE);           // for thread stack
+	struct Trapframe child_tf;
+
+	int childpid = sys_exothread();
+	if (childpid < 0) {
+		panic("fork sys_exofork error : %e\n", childpid);
+	}
+
+	int r;
+	uint32_t sta_top, sta[2];
+	sta_top = (uint32_t)t_stack + PGSIZE;
+	sta[0] = (uint32_t)exit;					// return address
+	sta[1] = (uint32_t)arg;					    // thread arg
+	sta_top -= 2 * sizeof(uint32_t);		
+	memcpy((void *)sta_top, (void *)sta, 2 * sizeof(uint32_t));
+
+	child_tf = envs[ENVX(childpid)].env_tf;
+  	child_tf.tf_eip = (uint32_t)f;				    // set eip
+	child_tf.tf_esp = sta_top;						// set esp
+
+	if ((r = sys_env_set_trapframe(childpid, &child_tf)) < 0) {
+		cprintf("pthread create: sys_env_set_trapframe: %e\n", r);
+		return r;
+	}
+	if ((r = sys_env_set_status(childpid, ENV_RUNNABLE)) < 0) {
+		cprintf("pthread create: set thread status error : %e\n", r);
+		return r;
+	}
+
+	*t_id = childpid;
+	return 0;
+}
+\end{lstlisting}
+
+\par
+对于函数pthead\_join(envid\_t id)，我采用非常Naive的方法，不断通过系统调用来看某个线程是否已经结束。
+\begin{lstlisting}[language=C]
+int
+pthread_join(envid_t id)
+{
+	int r;
+	while (1) {
+		r = sys_join(id);
+		if (r != 0) return r;
+	}
+}
+\end{lstlisting}
+\par
+这个时候，如果任何一个线程退出，则会删除其地址空间，若此时还存在别的线程正在运行，则会导致灾难性的结果。这个是我们想要避免，因此对于子线程的退出，我们只需要删除其enviroment，但是不回收其地址空间。如果是主线程需要退出，则我们需要删去地址空间，但是为了防止其它线程导致page fault，因此需要先将所有线程进行回收，如果这个时候别的核正在进行该线程的调度，则标记为ENV\_DYING，等待别的CPU将线程调度下CPU的时候将其回收。因此我更改了函数sys\_env\_destroy和env\_free。
+\par
+到目前为止的实验效果：\par
+\includegraphics{p1.png}\par
+\includegraphics{p2.png}\par
+\includegraphics{p3.png}\par
+\includegraphics{p4.png}
+\end{subsection}
+
+\begin{subsection}{Mutex实现}
+\par
+从上面的实现可以看出现了竞争导致了错误的结果，因此我们需要实现琐。对于琐的实现有多种方式，其中一种是通过关闭中断来实现，通过关闭中断来使得CPU不能产生进程切换，从而实现琐，但是在多核上并不适用。另一种方式就是通过体系结构支持的原子操作xchg来实现，其原理是通过锁内存总线来实现的，保证在多核上也能正常运行。因此我实现了一个很Naive的锁机制：
+\begin{lstlisting}[language=C]
+int
+pthread_mutex_init(pthread_mutex_t * mutex)
+{
+	mutex->lock = 0;
+	return 0;
+}
+
+int
+pthread_mutex_lock(pthread_mutex_t * mutex)
+{
+	while (xchg(&mutex->lock, 1) == 1)
+		;
+	return 0;
+}
+
+int
+pthread_mutex_unlock(pthread_mutex_t * mutex)
+{
+	xchg(&mutex->lock, 0);
+	return 0;
+}
+\end{lstlisting}
+\par
+通过实验，发现成功达到了锁的要求。\par
+\includegraphics{p5.png} \par
+\includegraphics{p6.png}
+\par
+至此，这就实现好了一个简单的Thread。
+\end{subsection}
+
+\begin{subsection}{不足与今后的改进}
+\par
+1. 对于主线程退出之后忙等待所有线程调度下CPU非常低效. \par
+2. 可以考虑实现线程池来减少创建进程的开销. \par
+3. 这里只实现了简单的mutex，没有采用内核来管理，可以加入内核参与的PV和Condition Variables. \par
+\end{subsection}
+
+\end{section}
+
+\begin{section}{感想与收获}
+\par
+一开始查了很多关于Linux线程是如何实现的资料，资料少而且很多都不讲怎么实现。于是我开启了读Linux源码的宏大计划，读了一会，结合了一些资料，大概理解了Linux的线程实现方法。于是有了Linux的帮助下，我就尝试去实现一个Naive的线程库。但是实现起来也遇到了许多困难，一方面是共享内存和分离的栈空间的，为了实现分离的栈空间，我一开始思考了好久如何解决，后来发现有同学的大作业是JOS的malloc，我就使用了malloc来分配独立的栈空间，来简单实现了共享内存和分离的栈空间。第二个是意料之外的bug ，就是主线程退出了导致子线程缺页异常，这一部份是我写的时候没考虑周全。主要问题就是写的过程中经常没太想清楚就开始码了，然后写得乱起八糟，遇到bug之后又需要花很多时间来处理，不过幸好有之前5个lab 的磨练，对jos整体也比较熟悉了，所以最后有惊无险完成了简单的线程实现。
+\par
+通过这个拓展，独立实现一个线程还是非常有意思的一件事情。虽然写和看内核代码固然比较枯燥，但是发现最终能成功运行真是让人无比激动。
+\end{section}
+
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
